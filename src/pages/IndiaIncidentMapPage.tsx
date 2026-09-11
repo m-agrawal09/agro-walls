@@ -14,26 +14,38 @@ import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { api, CaseData } from '../services/api';
 
-// District spatial anchors in Rajasthan
-interface DistrictAnchor {
+export interface IndianCity {
+  id: number;
+  city: string;
+  district: string;
+  state: string;
+  population?: number;
+  latitude: number;
+  longitude: number;
+}
+
+interface CityAnchor {
   name: string;
   code: string;
   lat: number;
   lng: number;
+  district: string;
+  population?: number;
   sector: string;
 }
 
-const RAJASTHAN_DISTRICTS: DistrictAnchor[] = [
-  { name: 'Jaipur', code: 'JPR', lat: 26.9124, lng: 75.7873, sector: 'Central Capital Sector' },
-  { name: 'Jodhpur', code: 'JDH', lat: 26.2389, lng: 73.0243, sector: 'Western Desert Command' },
-  { name: 'Kota', code: 'KTA', lat: 25.2138, lng: 75.8648, sector: 'Chambal River Sector' },
-  { name: 'Udaipur', code: 'UDP', lat: 24.5854, lng: 73.7125, sector: 'Mewar Highland Sector' },
-  { name: 'Bikaner', code: 'BKN', lat: 28.0229, lng: 73.3119, sector: 'North Thar Outpost' },
-  { name: 'Ajmer', code: 'AJM', lat: 26.4499, lng: 74.6399, sector: 'Aravalli Hub' },
-  { name: 'Alwar', code: 'ALW', lat: 27.5530, lng: 76.6346, sector: 'NCR Border Sector' },
-  { name: 'Bharatpur', code: 'BHR', lat: 27.2152, lng: 77.5030, sector: 'Eastern Gateway' },
-  { name: 'Sikar', code: 'SKR', lat: 27.6094, lng: 75.1398, sector: 'Shekhawati Post' },
-  { name: 'Bhilwara', code: 'BHL', lat: 25.3407, lng: 74.6313, sector: 'Industrial Relief Grid' }
+// Fallback anchor districts in Rajasthan if file loading
+const DEFAULT_RAJASTHAN_DISTRICTS: CityAnchor[] = [
+  { name: 'Jaipur', code: 'JPR', lat: 26.9124, lng: 75.7873, district: 'Jaipur', sector: 'Central Capital Sector' },
+  { name: 'Jodhpur', code: 'JDH', lat: 26.2389, lng: 73.0243, district: 'Jodhpur', sector: 'Western Desert Command' },
+  { name: 'Kota', code: 'KTA', lat: 25.2138, lng: 75.8648, district: 'Kota', sector: 'Chambal River Sector' },
+  { name: 'Udaipur', code: 'UDP', lat: 24.5854, lng: 73.7125, district: 'Udaipur', sector: 'Mewar Highland Sector' },
+  { name: 'Bikaner', code: 'BKN', lat: 28.0229, lng: 73.3119, district: 'Bikaner', sector: 'North Thar Outpost' },
+  { name: 'Ajmer', code: 'AJM', lat: 26.4499, lng: 74.6399, district: 'Ajmer', sector: 'Aravalli Hub' },
+  { name: 'Alwar', code: 'ALW', lat: 27.5530, lng: 76.6346, district: 'Alwar', sector: 'NCR Border Sector' },
+  { name: 'Bharatpur', code: 'BHR', lat: 27.2152, lng: 77.5030, district: 'Bharatpur', sector: 'Eastern Gateway' },
+  { name: 'Sikar', code: 'SKR', lat: 27.6094, lng: 75.1398, district: 'Sikar', sector: 'Shekhawati Post' },
+  { name: 'Bhilwara', code: 'BHL', lat: 25.3407, lng: 74.6313, district: 'Bhilwara', sector: 'Industrial Relief Grid' }
 ];
 
 type TileTheme = 'STREETS' | 'DARK' | 'SATELLITE';
@@ -49,6 +61,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
   const [tileTheme, setTileTheme] = useState<TileTheme>('STREETS');
   const [cases, setCases] = useState<CaseData[]>([]);
   const [reports, setReports] = useState<any[]>([]);
+  const [allCities, setAllCities] = useState<IndianCity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastSyncTime, setLastSyncTime] = useState<string>('Just now');
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
@@ -56,7 +69,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'ROUTINE'>('ALL');
   const [geoData, setGeoData] = useState<any | null>(null);
 
-  // Fetch live cases & reports from MongoDB
+  // Fetch live cases & reports from MongoDB Atlas (Zero static data)
   const fetchLiveData = async () => {
     setIsLoading(true);
     try {
@@ -89,16 +102,33 @@ export const IndiaIncidentMapPage: React.FC = () => {
       .catch(err => console.error('Failed to load rajasthan.geojson:', err));
   }, []);
 
-  // Tile URL mapping
+  // Load all-indian-cities.json provided in project
+  useEffect(() => {
+    fetch('/all-indian-cities.json')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAllCities(data);
+        }
+      })
+      .catch(err => {
+        console.warn('Could not load all-indian-cities.json:', err);
+      });
+  }, []);
+
+  // Completely Free, Open Tile URLs (Zero API Keys Required, Zero Watermarks)
   const getTileUrl = (theme: TileTheme) => {
     switch (theme) {
       case 'DARK':
-        return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        // Esri World Dark Gray Base - Clean, high contrast, completely free, no watermark, no API key required
+        return 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
       case 'SATELLITE':
+        // Esri World Imagery - Photorealistic satellite map, free, no watermark, no API key required
         return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
       case 'STREETS':
       default:
-        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        // OpenStreetMap Standard - Free, open global street map, no watermark, no API key required
+        return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     }
   };
 
@@ -112,13 +142,12 @@ export const IndiaIncidentMapPage: React.FC = () => {
       center: [26.5, 74.0],
       zoom: 6.8,
       minZoom: 5,
-      maxZoom: 14,
-      zoomControl: false // custom zoom buttons
+      maxZoom: 15,
+      zoomControl: false // Custom zoom buttons
     });
 
     const tileLayer = L.tileLayer(getTileUrl(tileTheme), {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
+      attribution: '&copy; OpenStreetMap contributors &copy; Esri',
       maxZoom: 19
     }).addTo(map);
 
@@ -133,7 +162,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
     };
   }, []);
 
-  // Update Tile Layer when tileTheme changes
+  // Update Tile Layer when tileTheme changes (Streets, Dark, Satellite)
   useEffect(() => {
     if (!mapInstanceRef.current || !tileLayerRef.current) return;
     tileLayerRef.current.setUrl(getTileUrl(tileTheme));
@@ -162,7 +191,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
       // Mask Polygon (Dark overlay over all other regions outside Rajasthan)
       L.polygon([worldOuterRing, rajasthanLatLngs], {
         fillColor: tileTheme === 'DARK' ? '#020617' : '#0f172a',
-        fillOpacity: tileTheme === 'DARK' ? 0.82 : 0.62,
+        fillOpacity: tileTheme === 'DARK' ? 0.85 : 0.65,
         stroke: false,
         interactive: false
       }).addTo(group);
@@ -172,7 +201,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
       L.polygon(rajasthanLatLngs, {
         color: '#38bdf8',
         weight: 14,
-        opacity: 0.3,
+        opacity: 0.35,
         fill: false,
         lineCap: 'round',
         lineJoin: 'round',
@@ -183,7 +212,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
       L.polygon(rajasthanLatLngs, {
         color: '#0284c7',
         weight: 7,
-        opacity: 0.7,
+        opacity: 0.75,
         fill: false,
         lineCap: 'round',
         lineJoin: 'round',
@@ -205,6 +234,33 @@ export const IndiaIncidentMapPage: React.FC = () => {
       console.error('Error drawing boundary mask:', err);
     }
   }, [geoData, tileTheme]);
+
+  // Extract all Rajasthan cities from all-indian-cities.json
+  const rajasthanCitiesList = useMemo<CityAnchor[]>(() => {
+    if (!allCities || allCities.length === 0) return DEFAULT_RAJASTHAN_DISTRICTS;
+
+    const rj = allCities
+      .filter(c => c.state === 'Rajasthan' && c.latitude && c.longitude)
+      .map(c => ({
+        name: c.city,
+        code: c.city.slice(0, 3).toUpperCase(),
+        lat: Number(c.latitude),
+        lng: Number(c.longitude),
+        district: c.district || c.city,
+        population: c.population,
+        sector: `${c.district || c.city} Regional Hub`
+      }));
+
+    return rj.length > 0 ? rj : DEFAULT_RAJASTHAN_DISTRICTS;
+  }, [allCities]);
+
+  // Other major Indian cities outside Rajasthan to fill national context
+  const otherMajorCities = useMemo(() => {
+    if (!allCities || allCities.length === 0) return [];
+    return allCities
+      .filter(c => c.state !== 'Rajasthan' && c.population && c.population > 1000000)
+      .slice(0, 25);
+  }, [allCities]);
 
   // Combine Live Database Cases + Reports
   const allIncidents = useMemo(() => {
@@ -230,7 +286,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
     return [...caseItems, ...reportItems];
   }, [cases, reports]);
 
-  // Filtered list
+  // Filtered incidents
   const filteredIncidents = useMemo(() => {
     return allIncidents.filter(inc => {
       if (filterPriority !== 'ALL' && inc.priority !== filterPriority) return false;
@@ -246,171 +302,221 @@ export const IndiaIncidentMapPage: React.FC = () => {
     });
   }, [allIncidents, filterPriority, searchQuery]);
 
-  // Group incidents into Rajasthan district clusters & individual pins
-  const { clusters } = useMemo(() => {
-    const counts: Record<string, any[]> = {};
-    RAJASTHAN_DISTRICTS.forEach(d => { counts[d.code] = []; });
+  // Group live incidents into Rajasthan cities from all-indian-cities.json
+  const cityClusters = useMemo(() => {
+    const cityMap: Record<string, any[]> = {};
+    rajasthanCitiesList.forEach(c => { cityMap[c.name] = []; });
 
     filteredIncidents.forEach((item, index) => {
-      const loc = (item.lastSeenLocation || '').toLowerCase();
-      let matchedCode = 'JPR';
-
-      if (loc.includes('jodhpur')) matchedCode = 'JDH';
-      else if (loc.includes('kota')) matchedCode = 'KTA';
-      else if (loc.includes('udaipur')) matchedCode = 'UDP';
-      else if (loc.includes('bikaner')) matchedCode = 'BKN';
-      else if (loc.includes('ajmer')) matchedCode = 'AJM';
-      else if (loc.includes('alwar')) matchedCode = 'ALW';
-      else if (loc.includes('bharatpur')) matchedCode = 'BHR';
-      else if (loc.includes('sikar')) matchedCode = 'SKR';
-      else if (loc.includes('bhilwara')) matchedCode = 'BHL';
-      else {
-        // Distribute mathematically across Rajasthan districts
-        matchedCode = RAJASTHAN_DISTRICTS[index % RAJASTHAN_DISTRICTS.length].code;
+      const loc = (item.lastSeenLocation || item.sector || '').toLowerCase();
+      
+      // Match against real city names in Rajasthan
+      const matchedCity = rajasthanCitiesList.find(c => loc.includes(c.name.toLowerCase()));
+      if (matchedCity) {
+        cityMap[matchedCity.name].push(item);
+      } else {
+        // Distribute mathematically across Rajasthan cities so every report is visualized
+        const targetCity = rajasthanCitiesList[index % rajasthanCitiesList.length];
+        cityMap[targetCity.name].push(item);
       }
-
-      counts[matchedCode].push(item);
     });
 
-    const clusterList = RAJASTHAN_DISTRICTS.map(d => ({
-      ...d,
-      items: counts[d.code],
-      count: counts[d.code].length
+    return rajasthanCitiesList.map(c => ({
+      ...c,
+      items: cityMap[c.name] || [],
+      count: (cityMap[c.name] || []).length
     }));
+  }, [filteredIncidents, rajasthanCitiesList]);
 
-    return { clusters: clusterList };
-  }, [filteredIncidents]);
-
-  // Plot Interactive Clusters & Pins onto Leaflet Map (Matching Reference Image)
+  // Plot Interactive Clusters, City Nodes, and Pins onto Leaflet Map
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerGroupRef.current) return;
     const group = markersLayerGroupRef.current;
     group.clearLayers();
 
-    clusters.forEach((c) => {
-      if (c.count === 0) return;
+    // 1. Render all Rajasthan cities (Filled across the state)
+    cityClusters.forEach((c) => {
+      if (c.count > 0) {
+        // ACTIVE CLUSTER DISK (Matches Reference Image: Red glowing circle with number + 3-letter code)
+        const isLarge = c.count >= 10;
+        const sizePx = isLarge ? 56 : 46;
 
-      const isLarge = c.count >= 10;
-      const sizePx = isLarge ? 58 : 46;
-
-      // Custom HTML Marker matching the screenshot design (Red circular glowing disc with count + code)
-      const clusterIcon = L.divIcon({
-        className: 'custom-crime-cluster',
-        html: `
-          <div style="
-            position: relative;
-            width: ${sizePx}px;
-            height: ${sizePx}px;
-            display: flex;
-            align-items: center;
-            justifyContent: center;
-            cursor: pointer;
-          ">
-            <!-- Pulsing outer glow ring -->
-            <div style="
-              position: absolute;
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              background: rgba(225, 29, 72, 0.28);
-              box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
-              animation: clusterPulse 2s infinite ease-in-out;
-            "></div>
-
-            <!-- Solid inner disc -->
-            <div style="
-              position: relative;
-              width: ${sizePx - 10}px;
-              height: ${sizePx - 10}px;
-              border-radius: 50%;
-              background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);
-              border: 2px solid rgba(255, 255, 255, 0.9);
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justifyContent: center;
-              color: #ffffff;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              text-align: center;
-            ">
-              <span style="font-size: ${isLarge ? 15 : 13}px; font-weight: 800; line-height: 1;">${c.count}</span>
-              <span style="font-size: 8px; font-weight: 700; opacity: 0.9; letter-spacing: 0.05em; margin-top: 1px;">${c.code}</span>
-            </div>
-          </div>
-        `,
-        iconSize: [sizePx, sizePx],
-        iconAnchor: [sizePx / 2, sizePx / 2]
-      });
-
-      const marker = L.marker([c.lat, c.lng], { icon: clusterIcon }).addTo(group);
-
-      // Interactive Tooltip & Click Event
-      marker.bindTooltip(`
-        <div style="padding: 4px 6px; font-family: sans-serif;">
-          <div style="font-weight: 700; font-size: 13px; color: #e11d48;">${c.name} District Cluster</div>
-          <div style="font-size: 11px; color: #475569; margin-top: 2px;">
-            ${c.count} Live Ingest Records (${c.sector})
-          </div>
-          <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 3px;">
-            Click to view district case files
-          </div>
-        </div>
-      `, { offset: [0, -20], direction: 'top' });
-
-      marker.on('click', () => {
-        if (c.items[0]) {
-          setSelectedCase(c.items[0]);
-        }
-      });
-
-      // Also render small child satellite pins around the cluster center for individual cases
-      c.items.slice(0, 4).forEach((childCase, idx) => {
-        const offsetAngle = (idx * (360 / 4) + 25) * (Math.PI / 180);
-        const offsetDist = 0.22 + (idx * 0.04);
-        const childLat = c.lat + Math.sin(offsetAngle) * offsetDist;
-        const childLng = c.lng + Math.cos(offsetAngle) * offsetDist;
-
-        const isChildCritical = childCase.priority === 'CRITICAL';
-        const childIcon = L.divIcon({
-          className: 'child-satellite-pin',
+        const clusterIcon = L.divIcon({
+          className: 'custom-crime-cluster',
           html: `
             <div style="
-              width: 26px;
-              height: 26px;
-              border-radius: 50%;
-              background: ${isChildCritical ? '#dc2626' : '#0284c7'};
-              border: 1.5px solid #ffffff;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              position: relative;
+              width: ${sizePx}px;
+              height: ${sizePx}px;
               display: flex;
               align-items: center;
               justifyContent: center;
-              color: #ffffff;
-              font-size: 10px;
-              font-weight: 800;
               cursor: pointer;
             ">
-              ${idx + 1}
+              <!-- Pulsing outer glow ring -->
+              <div style="
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: rgba(225, 29, 72, 0.28);
+                box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
+                animation: clusterPulse 2s infinite ease-in-out;
+              "></div>
+
+              <!-- Solid inner disc -->
+              <div style="
+                position: relative;
+                width: ${sizePx - 10}px;
+                height: ${sizePx - 10}px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);
+                border: 2px solid rgba(255, 255, 255, 0.9);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justifyContent: center;
+                color: #ffffff;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                text-align: center;
+              ">
+                <span style="font-size: ${isLarge ? 15 : 13}px; font-weight: 800; line-height: 1;">${c.count}</span>
+                <span style="font-size: 8px; font-weight: 700; opacity: 0.9; letter-spacing: 0.05em; margin-top: 1px;">${c.code}</span>
+              </div>
             </div>
           `,
-          iconSize: [26, 26],
-          iconAnchor: [13, 13]
+          iconSize: [sizePx, sizePx],
+          iconAnchor: [sizePx / 2, sizePx / 2]
         });
 
-        const childMarker = L.marker([childLat, childLng], { icon: childIcon }).addTo(group);
-        childMarker.bindTooltip(`
-          <div style="font-family: sans-serif; padding: 2px 4px;">
-            <strong>${childCase.name}</strong> (${childCase.caseId})
-            <div style="font-size: 11px; color: #64748b;">${childCase.lastSeenLocation}</div>
+        const marker = L.marker([c.lat, c.lng], { icon: clusterIcon }).addTo(group);
+
+        marker.bindTooltip(`
+          <div style="padding: 4px 6px; font-family: sans-serif;">
+            <div style="font-weight: 700; font-size: 13px; color: #e11d48;">${c.name} (${c.district})</div>
+            <div style="font-size: 11px; color: #475569; margin-top: 2px;">
+              ${c.count} Live Ingest Records • Pop: ${c.population ? c.population.toLocaleString() : 'N/A'}
+            </div>
+            <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 3px;">
+              Click to view case files
+            </div>
           </div>
-        `, { offset: [0, -12], direction: 'top' });
+        `, { offset: [0, -20], direction: 'top' });
 
-        childMarker.on('click', () => {
-          setSelectedCase(childCase);
+        marker.on('click', () => {
+          if (c.items[0]) {
+            setSelectedCase(c.items[0]);
+          }
         });
-      });
+
+        // Small satellite child pins around city center representing individual incidents
+        c.items.slice(0, 4).forEach((childCase, idx) => {
+          const offsetAngle = (idx * (360 / 4) + 25) * (Math.PI / 180);
+          const offsetDist = 0.18 + (idx * 0.04);
+          const childLat = c.lat + Math.sin(offsetAngle) * offsetDist;
+          const childLng = c.lng + Math.cos(offsetAngle) * offsetDist;
+
+          const isChildCritical = childCase.priority === 'CRITICAL';
+          const childIcon = L.divIcon({
+            className: 'child-satellite-pin',
+            html: `
+              <div style="
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: ${isChildCritical ? '#dc2626' : '#0284c7'};
+                border: 1.5px solid #ffffff;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justifyContent: center;
+                color: #ffffff;
+                font-size: 10px;
+                font-weight: 800;
+                cursor: pointer;
+              ">
+                ${idx + 1}
+              </div>
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+
+          const childMarker = L.marker([childLat, childLng], { icon: childIcon }).addTo(group);
+          childMarker.bindTooltip(`
+            <div style="font-family: sans-serif; padding: 2px 4px;">
+              <strong>${childCase.name}</strong> (${childCase.caseId})
+              <div style="font-size: 11px; color: #64748b;">${childCase.lastSeenLocation}</div>
+            </div>
+          `, { offset: [0, -12], direction: 'top' });
+
+          childMarker.on('click', () => {
+            setSelectedCase(childCase);
+          });
+        });
+      } else {
+        // INACTIVE CITY WAYPOINT (Fills the map of Rajasthan with official cities from all-indian-cities.json)
+        const cityIcon = L.divIcon({
+          className: 'city-waypoint-pin',
+          html: `
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              background: rgba(255, 255, 255, 0.85);
+              padding: 2px 6px;
+              border-radius: 10px;
+              border: 1px solid rgba(225, 29, 72, 0.35);
+              box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+              cursor: pointer;
+              transform: translate(-50%, -50%);
+              white-space: nowrap;
+            ">
+              <span style="width: 5px; height: 5px; border-radius: 50%; background: #e11d48;"></span>
+              <span style="font-size: 9px; font-weight: 700; color: #1e293b; font-family: sans-serif;">${c.name}</span>
+            </div>
+          `,
+          iconSize: [0, 0]
+        });
+
+        const cityMarker = L.marker([c.lat, c.lng], { icon: cityIcon }).addTo(group);
+        cityMarker.bindTooltip(`
+          <div style="padding: 2px 4px; font-family: sans-serif;">
+            <strong>${c.name}</strong> (${c.district})
+            <div style="font-size: 10px; color: #64748b;">Population: ${c.population ? c.population.toLocaleString() : 'N/A'}</div>
+          </div>
+        `, { direction: 'top' });
+      }
     });
-  }, [clusters]);
+
+    // 2. Render other major Indian cities outside Rajasthan as subtle reference nodes
+    otherMajorCities.forEach(city => {
+      const nationalCityIcon = L.divIcon({
+        className: 'national-city-pin',
+        html: `
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            opacity: 0.65;
+            color: #94a3b8;
+            font-size: 8.5px;
+            font-weight: 600;
+            font-family: sans-serif;
+            transform: translate(-50%, -50%);
+          ">
+            <span style="width: 4px; height: 4px; border-radius: 50%; background: #94a3b8;"></span>
+            <span>${city.city}</span>
+          </div>
+        `,
+        iconSize: [0, 0]
+      });
+
+      L.marker([city.latitude, city.longitude], { icon: nationalCityIcon }).addTo(group);
+    });
+
+  }, [cityClusters, otherMajorCities]);
 
   // Zoom helpers
   const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
@@ -419,6 +525,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
   // Active metrics
   const totalCount = allIncidents.length;
   const criticalCount = allIncidents.filter(i => i.priority === 'CRITICAL').length;
+  const totalRjCitiesCount = rajasthanCitiesList.length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%', backgroundColor: 'var(--bg-app)' }}>
@@ -474,7 +581,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
               </span>
             </h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>
-              District Overview • Real-Time Feed from MongoDB Atlas (Other Regions Faded)
+              Filled with all Indian Cities data • {totalRjCitiesCount} Rajasthan Cities & Districts • Live Database Connected
             </p>
           </div>
 
@@ -563,7 +670,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
             <Search size={14} color="var(--text-muted)" />
             <input
               type="text"
-              placeholder="Search person name, ID, sector..."
+              placeholder="Search person name, ID, sector, city..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -611,7 +718,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
         alignItems: 'start'
       }}>
         
-        {/* MAP CONTAINER (Matches Reference Images) */}
+        {/* MAP CONTAINER (Matches Reference Images, Zero Watermarks, No API Key Required) */}
         <div style={{
           position: 'relative',
           borderRadius: '12px',
@@ -657,7 +764,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
             </span>
           </div>
 
-          {/* TOP-RIGHT TILE LAYER SWITCHER (Matching Screenshot: STREETS | DARK | SATELLITE) */}
+          {/* TOP-RIGHT TILE LAYER SWITCHER (Matching Screenshot: STREETS | DARK | SATELLITE - NO WATERMARKS) */}
           <div style={{
             position: 'absolute',
             top: '16px',
@@ -772,7 +879,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
               HIGH RISK: <span style={{ color: '#dc2626' }}>{criticalCount}</span>
             </div>
             <div>
-              HOTSPOTS: <span style={{ color: '#e11d48' }}>10 DISTRICTS</span>
+              HOTSPOTS: <span style={{ color: '#e11d48' }}>{totalRjCitiesCount} CITIES</span>
             </div>
           </div>
 
@@ -941,8 +1048,8 @@ export const IndiaIncidentMapPage: React.FC = () => {
 
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Active Hubs:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Jaipur, Jodhpur, Kota, Udaipur</span>
+                <span style={{ color: 'var(--text-muted)' }}>Mapped Cities:</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{totalRjCitiesCount} Rajasthan Hubs</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Response Units:</span>
