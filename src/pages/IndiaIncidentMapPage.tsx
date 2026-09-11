@@ -1,206 +1,63 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   MapPin,
   Search,
   RefreshCw,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Shield,
   ExternalLink,
+  Shield,
   Activity
 } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { api, CaseData } from '../services/api';
 
-// Definition of Indian States & Regions with SVG Paths
-interface RegionPath {
-  id: string;
+// District spatial anchors in Rajasthan
+interface DistrictAnchor {
   name: string;
   code: string;
-  d: string;
-  center: [number, number];
-  isRajasthan?: boolean;
-  baseCasesCount?: number;
-}
-
-// Coordinate mapping for Rajasthan Districts and Indian Cities
-interface IncidentPin {
-  id: string;
-  caseId: string;
-  name: string;
-  age: number | string;
-  gender: string;
-  location: string;
+  lat: number;
+  lng: number;
   sector: string;
-  priority: 'CRITICAL' | 'HIGH' | 'ROUTINE';
-  status: string;
-  x: number;
-  y: number;
-  reportedAgo: string;
-  hasPhoto?: boolean;
-  photoUrl?: string;
-  reporterContact?: string;
 }
 
-// Curated vector geometry for India states (viewBox: 0 0 1000 1100)
-const INDIA_REGIONS: RegionPath[] = [
-  // RAJASTHAN (Highlighted Focus Region - Largest State in Western India)
-  {
-    id: 'rajasthan',
-    name: 'Rajasthan',
-    code: 'RJ',
-    isRajasthan: true,
-    center: [280, 360],
-    d: 'M 220 250 L 290 220 L 350 240 L 390 290 L 380 340 L 410 380 L 380 430 L 350 460 L 300 480 L 240 450 L 190 410 L 160 360 L 180 300 Z'
-  },
-  // JAMMU & KASHMIR & LADAKH
-  {
-    id: 'jk-ladakh',
-    name: 'Jammu & Kashmir / Ladakh',
-    code: 'JK',
-    center: [320, 110],
-    d: 'M 250 140 L 290 70 L 380 50 L 460 80 L 440 140 L 370 170 L 310 180 Z'
-  },
-  // PUNJAB & HARYANA & DELHI
-  {
-    id: 'punjab-haryana',
-    name: 'Punjab, Haryana & Delhi NCR',
-    code: 'PB/HR',
-    center: [330, 210],
-    d: 'M 290 180 L 360 170 L 390 220 L 350 240 L 290 220 Z'
-  },
-  // HIMACHAL PRADESH & UTTARAKHAND
-  {
-    id: 'himachal-uttarakhand',
-    name: 'Himachal Pradesh & Uttarakhand',
-    code: 'HP/UK',
-    center: [410, 180],
-    d: 'M 360 170 L 440 140 L 480 190 L 440 230 L 390 220 Z'
-  },
-  // UTTAR PRADESH
-  {
-    id: 'uttar-pradesh',
-    name: 'Uttar Pradesh',
-    code: 'UP',
-    center: [480, 310],
-    d: 'M 390 220 L 440 230 L 530 250 L 620 280 L 610 350 L 540 370 L 460 360 L 410 380 L 380 340 L 390 290 Z'
-  },
-  // GUJARAT
-  {
-    id: 'gujarat',
-    name: 'Gujarat',
-    code: 'GJ',
-    center: [190, 480],
-    d: 'M 160 360 L 190 410 L 240 450 L 220 520 L 170 540 L 120 500 L 130 430 Z'
-  },
-  // MADHYA PRADESH
-  {
-    id: 'madhya-pradesh',
-    name: 'Madhya Pradesh',
-    code: 'MP',
-    center: [430, 470],
-    d: 'M 300 480 L 350 460 L 380 430 L 460 360 L 540 370 L 580 440 L 540 520 L 440 540 L 350 540 Z'
-  },
-  // BIHAR & JHARKHAND
-  {
-    id: 'bihar-jharkhand',
-    name: 'Bihar & Jharkhand',
-    code: 'BR/JH',
-    center: [650, 390],
-    d: 'M 620 280 L 710 300 L 730 380 L 670 450 L 610 430 L 610 350 Z'
-  },
-  // WEST BENGAL & SIKKIM
-  {
-    id: 'west-bengal',
-    name: 'West Bengal & Sikkim',
-    code: 'WB',
-    center: [740, 410],
-    d: 'M 710 300 L 740 280 L 760 340 L 760 450 L 710 470 L 670 450 L 730 380 Z'
-  },
-  // MAHARASHTRA & GOA
-  {
-    id: 'maharashtra',
-    name: 'Maharashtra & Goa',
-    code: 'MH',
-    center: [340, 620],
-    d: 'M 220 520 L 350 540 L 440 540 L 480 620 L 430 710 L 310 700 L 240 640 Z'
-  },
-  // CHHATTISGARH & ODISHA
-  {
-    id: 'chhattisgarh-odisha',
-    name: 'Chhattisgarh & Odisha',
-    code: 'CG/OD',
-    center: [590, 550],
-    d: 'M 540 520 L 580 440 L 610 430 L 670 450 L 710 470 L 670 590 L 580 620 L 530 580 Z'
-  },
-  // TELANGANA & ANDHRA PRADESH
-  {
-    id: 'telangana-andhra',
-    name: 'Telangana & Andhra Pradesh',
-    code: 'TG/AP',
-    center: [470, 740],
-    d: 'M 430 710 L 480 620 L 580 620 L 550 750 L 490 850 L 430 810 Z'
-  },
-  // KARNATAKA
-  {
-    id: 'karnataka',
-    name: 'Karnataka',
-    code: 'KA',
-    center: [340, 790],
-    d: 'M 310 700 L 430 710 L 430 810 L 390 880 L 320 860 L 280 770 Z'
-  },
-  // KERALA & TAMIL NADU
-  {
-    id: 'kerala-tamilnadu',
-    name: 'Kerala & Tamil Nadu',
-    code: 'KL/TN',
-    center: [390, 940],
-    d: 'M 320 860 L 390 880 L 490 850 L 450 970 L 390 1040 L 350 960 Z'
-  },
-  // NORTH-EAST (Assam, Meghalaya, Arunachal, Tripura, Mizoram, Nagaland, Manipur)
-  {
-    id: 'northeast',
-    name: 'North-Eastern Region (Assam, Arunachal, etc.)',
-    code: 'NE',
-    center: [860, 340],
-    d: 'M 760 340 L 820 280 L 920 280 L 950 340 L 890 420 L 820 440 L 760 410 Z'
-  }
+const RAJASTHAN_DISTRICTS: DistrictAnchor[] = [
+  { name: 'Jaipur', code: 'JPR', lat: 26.9124, lng: 75.7873, sector: 'Central Capital Sector' },
+  { name: 'Jodhpur', code: 'JDH', lat: 26.2389, lng: 73.0243, sector: 'Western Desert Command' },
+  { name: 'Kota', code: 'KTA', lat: 25.2138, lng: 75.8648, sector: 'Chambal River Sector' },
+  { name: 'Udaipur', code: 'UDP', lat: 24.5854, lng: 73.7125, sector: 'Mewar Highland Sector' },
+  { name: 'Bikaner', code: 'BKN', lat: 28.0229, lng: 73.3119, sector: 'North Thar Outpost' },
+  { name: 'Ajmer', code: 'AJM', lat: 26.4499, lng: 74.6399, sector: 'Aravalli Hub' },
+  { name: 'Alwar', code: 'ALW', lat: 27.5530, lng: 76.6346, sector: 'NCR Border Sector' },
+  { name: 'Bharatpur', code: 'BHR', lat: 27.2152, lng: 77.5030, sector: 'Eastern Gateway' },
+  { name: 'Sikar', code: 'SKR', lat: 27.6094, lng: 75.1398, sector: 'Shekhawati Post' },
+  { name: 'Bhilwara', code: 'BHL', lat: 25.3407, lng: 74.6313, sector: 'Industrial Relief Grid' }
 ];
 
-// Key strategic district coordinates inside Rajasthan for precise mapping
-const RAJASTHAN_DISTRICTS = [
-  { name: 'Jaipur', code: 'JPR', x: 330, y: 320, isCapital: true },
-  { name: 'Jodhpur', code: 'JDH', x: 250, y: 360 },
-  { name: 'Kota', code: 'KTA', x: 360, y: 410 },
-  { name: 'Udaipur', code: 'UDP', x: 270, y: 440 },
-  { name: 'Bikaner', code: 'BKN', x: 250, y: 280 },
-  { name: 'Ajmer', code: 'AJM', x: 305, y: 360 },
-  { name: 'Alwar', code: 'ALW', x: 365, y: 295 },
-  { name: 'Bharatpur', code: 'BHR', x: 395, y: 310 },
-  { name: 'Sikar', code: 'SKR', x: 310, y: 295 },
-  { name: 'Bhilwara', code: 'BHL', x: 310, y: 410 }
-];
+type TileTheme = 'STREETS' | 'DARK' | 'SATELLITE';
 
 export const IndiaIncidentMapPage: React.FC = () => {
   const navigate = useNavigate();
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markersLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const boundaryLayerGroupRef = useRef<L.LayerGroup | null>(null);
+
+  const [tileTheme, setTileTheme] = useState<TileTheme>('STREETS');
   const [cases, setCases] = useState<CaseData[]>([]);
   const [reports, setReports] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastSyncTime, setLastSyncTime] = useState<string>('Just now');
-  const [selectedPin, setSelectedPin] = useState<IncidentPin | null>(null);
-  const [hoveredRegion, setHoveredRegion] = useState<RegionPath | null>(null);
-  const [hoveredPin, setHoveredPin] = useState<IncidentPin | null>(null);
-  const [priorityFilter, setPriorityFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'ROUTINE'>('ALL');
+  const [selectedCase, setSelectedCase] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [highlightRajasthan, setHighlightRajasthan] = useState<boolean>(true);
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [filterPriority, setFilterPriority] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'ROUTINE'>('ALL');
+  const [geoData, setGeoData] = useState<any | null>(null);
 
-  // Fetch live cases and reports from MongoDB
-  const fetchMapData = async () => {
+  // Fetch live cases & reports from MongoDB
+  const fetchLiveData = async () => {
     setIsLoading(true);
     try {
       const [casesRes, reportsRes] = await Promise.all([
@@ -211,148 +68,375 @@ export const IndiaIncidentMapPage: React.FC = () => {
       setReports(reportsRes || []);
       setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
-      console.error('[Map Data Fetch Error]:', err);
+      console.error('[Map Sync Error]:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Initial data load + 15s auto-polling to immediately reflect newly added reports
   useEffect(() => {
-    fetchMapData();
-    // Real-time polling every 20 seconds so any newly added report reflects automatically
-    const interval = setInterval(() => {
-      fetchMapData();
-    }, 20000);
+    fetchLiveData();
+    const interval = setInterval(fetchLiveData, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Compute dynamic Incident Pins from live MongoDB documents
-  const incidentPins = useMemo<IncidentPin[]>(() => {
-    const caseItems: any[] = cases || [];
-    const reportItems: any[] = (reports || [])
+  // Fetch official Rajasthan boundary GeoJSON
+  useEffect(() => {
+    fetch('/rajasthan.geojson')
+      .then(res => res.json())
+      .then(data => setGeoData(data))
+      .catch(err => console.error('Failed to load rajasthan.geojson:', err));
+  }, []);
+
+  // Tile URL mapping
+  const getTileUrl = (theme: TileTheme) => {
+    switch (theme) {
+      case 'DARK':
+        return 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      case 'SATELLITE':
+        return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      case 'STREETS':
+      default:
+        return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    }
+  };
+
+  // Initialize Leaflet Map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
+
+    // Center on Rajasthan (Latitude ~26.5°N, Longitude ~74.0°E)
+    const map = L.map(mapContainerRef.current, {
+      center: [26.5, 74.0],
+      zoom: 6.8,
+      minZoom: 5,
+      maxZoom: 14,
+      zoomControl: false // custom zoom buttons
+    });
+
+    const tileLayer = L.tileLayer(getTileUrl(tileTheme), {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    tileLayerRef.current = tileLayer;
+    markersLayerGroupRef.current = L.layerGroup().addTo(map);
+    boundaryLayerGroupRef.current = L.layerGroup().addTo(map);
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Update Tile Layer when tileTheme changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.setUrl(getTileUrl(tileTheme));
+  }, [tileTheme]);
+
+  // Render Rajasthan Glowing Border + Mask Out Faded Regions of India/World
+  useEffect(() => {
+    if (!mapInstanceRef.current || !boundaryLayerGroupRef.current || !geoData) return;
+    const group = boundaryLayerGroupRef.current;
+    group.clearLayers();
+
+    try {
+      const coords = geoData.geometry.coordinates[0];
+      // Convert GeoJSON [lng, lat] to Leaflet [lat, lng]
+      const rajasthanLatLngs: [number, number][] = coords.map((c: [number, number]) => [c[1], c[0]]);
+
+      // Inverted World Polygon: Darkens and fades everything outside Rajasthan
+      const worldOuterRing: [number, number][] = [
+        [-90, -180],
+        [-90, 180],
+        [90, 180],
+        [90, -180],
+        [-90, -180]
+      ];
+
+      // Mask Polygon (Dark overlay over all other regions outside Rajasthan)
+      L.polygon([worldOuterRing, rajasthanLatLngs], {
+        fillColor: tileTheme === 'DARK' ? '#020617' : '#0f172a',
+        fillOpacity: tileTheme === 'DARK' ? 0.82 : 0.62,
+        stroke: false,
+        interactive: false
+      }).addTo(group);
+
+      // MULTI-LAYER GLOWING CYAN/BLUE BORDER AROUND RAJASTHAN (Like Reference Image)
+      // 1. Broad outer atmospheric halo
+      L.polygon(rajasthanLatLngs, {
+        color: '#38bdf8',
+        weight: 14,
+        opacity: 0.3,
+        fill: false,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(group);
+
+      // 2. Mid intense neon glow
+      L.polygon(rajasthanLatLngs, {
+        color: '#0284c7',
+        weight: 7,
+        opacity: 0.7,
+        fill: false,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(group);
+
+      // 3. Crisp inner boundary line
+      L.polygon(rajasthanLatLngs, {
+        color: '#e0f2fe',
+        weight: 2.5,
+        opacity: 1.0,
+        fill: false,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false
+      }).addTo(group);
+
+    } catch (err) {
+      console.error('Error drawing boundary mask:', err);
+    }
+  }, [geoData, tileTheme]);
+
+  // Combine Live Database Cases + Reports
+  const allIncidents = useMemo(() => {
+    const caseItems = cases || [];
+    const reportItems = (reports || [])
       .filter(r => !caseItems.some(c => c.name === r.fullName))
-      .map(r => ({
-        _id: r._id,
+      .map((r, idx) => ({
+        _id: r._id || `rep-${idx}`,
         caseId: r.reportId,
         name: r.fullName,
         age: r.age,
         gender: r.gender,
-        lastSeenLocation: r.lastKnownLocation || r.intakeStation,
-        sector: r.intakeStation || 'Rajasthan Sector',
+        lastSeenLocation: r.lastKnownLocation || r.intakeStation || 'Rajasthan Focus Sector',
+        sector: r.intakeStation || 'Central Intake Desk',
         priority: r.urgencyLevel || 'HIGH',
         status: r.status || 'NEW REPORT',
-        reportedAgo: 'Recent Intake',
+        reportedAgo: 'Just now',
         hasPhoto: Boolean(r.imageUrl || r.photoUrl),
         photoUrl: r.imageUrl || r.photoUrl,
         reporterContact: r.phoneNumber || r.sourceContact
       }));
 
-    const allEntities = [...caseItems, ...reportItems];
-    if (allEntities.length === 0) return [];
+    return [...caseItems, ...reportItems];
+  }, [cases, reports]);
 
-    return allEntities.map((c, index) => {
-      const locStr = (c.lastSeenLocation || c.sector || '').toLowerCase();
-      let pinX = 280;
-      let pinY = 360;
-
-      // Smart spatial placement: match Rajasthan districts or general sectors
-      if (locStr.includes('jaipur') || index % 10 === 0) {
-        pinX = 330 + ((index * 7) % 25) - 12;
-        pinY = 320 + ((index * 9) % 25) - 12;
-      } else if (locStr.includes('jodhpur') || index % 10 === 1) {
-        pinX = 250 + ((index * 5) % 24) - 12;
-        pinY = 360 + ((index * 8) % 24) - 12;
-      } else if (locStr.includes('kota') || index % 10 === 2) {
-        pinX = 360 + ((index * 6) % 20) - 10;
-        pinY = 410 + ((index * 7) % 20) - 10;
-      } else if (locStr.includes('udaipur') || index % 10 === 3) {
-        pinX = 270 + ((index * 8) % 22) - 11;
-        pinY = 440 + ((index * 6) % 22) - 11;
-      } else if (locStr.includes('bikaner') || index % 10 === 4) {
-        pinX = 250 + ((index * 6) % 20) - 10;
-        pinY = 280 + ((index * 5) % 20) - 10;
-      } else if (locStr.includes('ajmer') || index % 10 === 5) {
-        pinX = 305 + ((index * 7) % 18) - 9;
-        pinY = 360 + ((index * 8) % 18) - 9;
-      } else if (locStr.includes('alwar') || index % 10 === 6) {
-        pinX = 365 + ((index * 5) % 16) - 8;
-        pinY = 295 + ((index * 6) % 16) - 8;
-      } else if (locStr.includes('bharatpur') || index % 10 === 7) {
-        pinX = 395 + ((index * 4) % 16) - 8;
-        pinY = 310 + ((index * 5) % 16) - 8;
-      } else if (locStr.includes('delhi') || locStr.includes('haryana')) {
-        pinX = 340 + ((index * 5) % 20) - 10;
-        pinY = 220 + ((index * 6) % 20) - 10;
-      } else if (locStr.includes('madhya') || locStr.includes('hoshangabad') || locStr.includes('narmada')) {
-        pinX = 420 + ((index * 6) % 30) - 15;
-        pinY = 460 + ((index * 7) % 30) - 15;
-      } else if (locStr.includes('gujarat')) {
-        pinX = 190 + ((index * 5) % 20) - 10;
-        pinY = 470 + ((index * 6) % 20) - 10;
-      } else {
-        // Distribute within Rajasthan focus perimeter
-        const angle = (index * 137.5 * Math.PI) / 180;
-        const radius = 20 + ((index * 13) % 70);
-        pinX = 300 + Math.cos(angle) * radius;
-        pinY = 360 + Math.sin(angle) * radius;
-      }
-
-      return {
-        id: c._id || `case-${index}`,
-        caseId: c.caseId,
-        name: c.name,
-        age: c.age || 'Unstated',
-        gender: c.gender === 'F' ? 'Female' : c.gender === 'M' ? 'Male' : 'Other',
-        location: c.lastSeenLocation || 'Disaster Sector Intake',
-        sector: c.sector || 'Sector B-4',
-        priority: c.priority || 'HIGH',
-        status: c.status || 'LOOKING FOR A MATCH',
-        x: pinX,
-        y: pinY,
-        reportedAgo: c.reportedAgo || 'Recently',
-        hasPhoto: c.hasPhoto,
-        photoUrl: c.photoUrl,
-        reporterContact: c.reporterContact
-      };
-    });
-  }, [cases]);
-
-  // Filter pins based on user selection
-  const filteredPins = useMemo(() => {
-    return incidentPins.filter(pin => {
-      if (priorityFilter !== 'ALL' && pin.priority !== priorityFilter) return false;
+  // Filtered list
+  const filteredIncidents = useMemo(() => {
+    return allIncidents.filter(inc => {
+      if (filterPriority !== 'ALL' && inc.priority !== filterPriority) return false;
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+        const q = searchQuery.toLowerCase();
         return (
-          pin.name.toLowerCase().includes(query) ||
-          pin.caseId.toLowerCase().includes(query) ||
-          pin.location.toLowerCase().includes(query) ||
-          pin.sector.toLowerCase().includes(query)
+          inc.name?.toLowerCase().includes(q) ||
+          inc.caseId?.toLowerCase().includes(q) ||
+          inc.lastSeenLocation?.toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [incidentPins, priorityFilter, searchQuery]);
+  }, [allIncidents, filterPriority, searchQuery]);
 
-  // Compute live metrics
-  const totalCasesCount = cases.length;
-  const rajasthanCasesCount = incidentPins.filter(p => p.x >= 150 && p.x <= 420 && p.y >= 210 && p.y <= 490).length;
-  const criticalCasesCount = incidentPins.filter(p => p.priority === 'CRITICAL').length;
+  // Group incidents into Rajasthan district clusters & individual pins
+  const { clusters } = useMemo(() => {
+    const counts: Record<string, any[]> = {};
+    RAJASTHAN_DISTRICTS.forEach(d => { counts[d.code] = []; });
 
-  const handleZoom = (delta: number) => {
-    setZoomLevel(prev => Math.min(2.5, Math.max(0.8, prev + delta)));
-  };
+    filteredIncidents.forEach((item, index) => {
+      const loc = (item.lastSeenLocation || '').toLowerCase();
+      let matchedCode = 'JPR';
 
-  const handleResetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-    setSelectedPin(null);
-  };
+      if (loc.includes('jodhpur')) matchedCode = 'JDH';
+      else if (loc.includes('kota')) matchedCode = 'KTA';
+      else if (loc.includes('udaipur')) matchedCode = 'UDP';
+      else if (loc.includes('bikaner')) matchedCode = 'BKN';
+      else if (loc.includes('ajmer')) matchedCode = 'AJM';
+      else if (loc.includes('alwar')) matchedCode = 'ALW';
+      else if (loc.includes('bharatpur')) matchedCode = 'BHR';
+      else if (loc.includes('sikar')) matchedCode = 'SKR';
+      else if (loc.includes('bhilwara')) matchedCode = 'BHL';
+      else {
+        // Distribute mathematically across Rajasthan districts
+        matchedCode = RAJASTHAN_DISTRICTS[index % RAJASTHAN_DISTRICTS.length].code;
+      }
+
+      counts[matchedCode].push(item);
+    });
+
+    const clusterList = RAJASTHAN_DISTRICTS.map(d => ({
+      ...d,
+      items: counts[d.code],
+      count: counts[d.code].length
+    }));
+
+    return { clusters: clusterList };
+  }, [filteredIncidents]);
+
+  // Plot Interactive Clusters & Pins onto Leaflet Map (Matching Reference Image)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markersLayerGroupRef.current) return;
+    const group = markersLayerGroupRef.current;
+    group.clearLayers();
+
+    clusters.forEach((c) => {
+      if (c.count === 0) return;
+
+      const isLarge = c.count >= 10;
+      const sizePx = isLarge ? 58 : 46;
+
+      // Custom HTML Marker matching the screenshot design (Red circular glowing disc with count + code)
+      const clusterIcon = L.divIcon({
+        className: 'custom-crime-cluster',
+        html: `
+          <div style="
+            position: relative;
+            width: ${sizePx}px;
+            height: ${sizePx}px;
+            display: flex;
+            align-items: center;
+            justifyContent: center;
+            cursor: pointer;
+          ">
+            <!-- Pulsing outer glow ring -->
+            <div style="
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              background: rgba(225, 29, 72, 0.28);
+              box-shadow: 0 0 16px rgba(225, 29, 72, 0.6);
+              animation: clusterPulse 2s infinite ease-in-out;
+            "></div>
+
+            <!-- Solid inner disc -->
+            <div style="
+              position: relative;
+              width: ${sizePx - 10}px;
+              height: ${sizePx - 10}px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);
+              border: 2px solid rgba(255, 255, 255, 0.9);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justifyContent: center;
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              text-align: center;
+            ">
+              <span style="font-size: ${isLarge ? 15 : 13}px; font-weight: 800; line-height: 1;">${c.count}</span>
+              <span style="font-size: 8px; font-weight: 700; opacity: 0.9; letter-spacing: 0.05em; margin-top: 1px;">${c.code}</span>
+            </div>
+          </div>
+        `,
+        iconSize: [sizePx, sizePx],
+        iconAnchor: [sizePx / 2, sizePx / 2]
+      });
+
+      const marker = L.marker([c.lat, c.lng], { icon: clusterIcon }).addTo(group);
+
+      // Interactive Tooltip & Click Event
+      marker.bindTooltip(`
+        <div style="padding: 4px 6px; font-family: sans-serif;">
+          <div style="font-weight: 700; font-size: 13px; color: #e11d48;">${c.name} District Cluster</div>
+          <div style="font-size: 11px; color: #475569; margin-top: 2px;">
+            ${c.count} Live Ingest Records (${c.sector})
+          </div>
+          <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 3px;">
+            Click to view district case files
+          </div>
+        </div>
+      `, { offset: [0, -20], direction: 'top' });
+
+      marker.on('click', () => {
+        if (c.items[0]) {
+          setSelectedCase(c.items[0]);
+        }
+      });
+
+      // Also render small child satellite pins around the cluster center for individual cases
+      c.items.slice(0, 4).forEach((childCase, idx) => {
+        const offsetAngle = (idx * (360 / 4) + 25) * (Math.PI / 180);
+        const offsetDist = 0.22 + (idx * 0.04);
+        const childLat = c.lat + Math.sin(offsetAngle) * offsetDist;
+        const childLng = c.lng + Math.cos(offsetAngle) * offsetDist;
+
+        const isChildCritical = childCase.priority === 'CRITICAL';
+        const childIcon = L.divIcon({
+          className: 'child-satellite-pin',
+          html: `
+            <div style="
+              width: 26px;
+              height: 26px;
+              border-radius: 50%;
+              background: ${isChildCritical ? '#dc2626' : '#0284c7'};
+              border: 1.5px solid #ffffff;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justifyContent: center;
+              color: #ffffff;
+              font-size: 10px;
+              font-weight: 800;
+              cursor: pointer;
+            ">
+              ${idx + 1}
+            </div>
+          `,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+
+        const childMarker = L.marker([childLat, childLng], { icon: childIcon }).addTo(group);
+        childMarker.bindTooltip(`
+          <div style="font-family: sans-serif; padding: 2px 4px;">
+            <strong>${childCase.name}</strong> (${childCase.caseId})
+            <div style="font-size: 11px; color: #64748b;">${childCase.lastSeenLocation}</div>
+          </div>
+        `, { offset: [0, -12], direction: 'top' });
+
+        childMarker.on('click', () => {
+          setSelectedCase(childCase);
+        });
+      });
+    });
+  }, [clusters]);
+
+  // Zoom helpers
+  const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
+  const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
+
+  // Active metrics
+  const totalCount = allIncidents.length;
+  const criticalCount = allIncidents.filter(i => i.priority === 'CRITICAL').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%', backgroundColor: 'var(--bg-app)' }}>
       
-      {/* Top Header */}
+      {/* Animation Style for Cluster Pulse */}
+      <style>{`
+        @keyframes clusterPulse {
+          0% { transform: scale(0.9); opacity: 0.8; }
+          50% { transform: scale(1.3); opacity: 0.2; }
+          100% { transform: scale(0.9); opacity: 0.8; }
+        }
+        .leaflet-container {
+          background: #090d16 !important;
+          font-family: inherit;
+        }
+      `}</style>
+
+      {/* Top Header Card */}
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-base)',
@@ -366,44 +450,31 @@ export const IndiaIncidentMapPage: React.FC = () => {
           gap: '1rem'
         }}>
           <div>
-            <div style={{
+            <h1 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              margin: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              fontSize: '0.75rem',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              marginBottom: '0.25rem',
-              textTransform: 'uppercase'
+              gap: '0.65rem'
             }}>
-              <span>NATIONAL GEOSPATIAL COMMAND</span>
-              <span>/</span>
-              <span>DISASTER SEARCH & RESCUE GRID</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <h1 style={{
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-                margin: 0
-              }}>
-                India Geospatial Incident Map
-              </h1>
+              <span>Rajasthan Live Incident Map</span>
               <span style={{
                 background: 'rgba(225, 29, 72, 0.1)',
                 color: '#e11d48',
-                border: '1px solid rgba(225, 29, 72, 0.25)',
+                border: '1px solid rgba(225, 29, 72, 0.3)',
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 padding: '2px 8px',
                 borderRadius: '12px'
               }}>
-                RAJASTHAN FOCUS BORDER HIGHLIGHTED
+                STATE BORDER HIGHLIGHTED
               </span>
-            </div>
+            </h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>
-              Live real-time incident pins connected to MongoDB. Every report filed dynamically updates the search coordinates.
+              District Overview • Real-Time Feed from MongoDB Atlas (Other Regions Faded)
             </p>
           </div>
 
@@ -425,7 +496,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
             </div>
 
             <button
-              onClick={fetchMapData}
+              onClick={fetchLiveData}
               disabled={isLoading}
               style={{
                 display: 'flex',
@@ -462,59 +533,76 @@ export const IndiaIncidentMapPage: React.FC = () => {
               }}
             >
               <MapPin size={14} />
-              <span>Add Report</span>
+              <span>+ Add Report</span>
             </button>
           </div>
         </div>
 
-        {/* Live Metrics Row */}
+        {/* Search & Priority Filter Controls */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
           gap: '1rem',
-          marginTop: '1.25rem',
-          paddingTop: '1rem',
+          marginTop: '1rem',
+          paddingTop: '0.75rem',
           borderTop: '1px solid var(--border-base)'
         }}>
-          <div style={{ background: 'var(--bg-app)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              Rajasthan Sector Cases
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#e11d48' }}>
-              {rajasthanCasesCount} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Active Pins</span>
-            </div>
+          {/* Search Box */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'var(--bg-app)',
+            padding: '0.4rem 0.85rem',
+            borderRadius: '8px',
+            border: '1px solid var(--border-base)',
+            width: '320px'
+          }}>
+            <Search size={14} color="var(--text-muted)" />
+            <input
+              type="text"
+              placeholder="Search person name, ID, sector..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                outline: 'none',
+                fontSize: '0.82rem',
+                color: 'var(--text-primary)',
+                width: '100%'
+              }}
+            />
           </div>
 
-          <div style={{ background: 'var(--bg-app)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              Total National Database Cases
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              {totalCasesCount} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Registered</span>
-            </div>
-          </div>
-
-          <div style={{ background: 'var(--bg-app)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              Critical Triage Priority
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#dc2626' }}>
-              {criticalCasesCount} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Emergency</span>
-            </div>
-          </div>
-
-          <div style={{ background: 'var(--bg-app)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
-              Active District Desks
-            </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#16a34a' }}>
-              10 Hubs <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>SDRF Online</span>
-            </div>
+          {/* Priority Filters */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Priority:</span>
+            {(['ALL', 'CRITICAL', 'HIGH', 'ROUTINE'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => setFilterPriority(p)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  border: filterPriority === p ? '1px solid var(--primary-color)' : '1px solid var(--border-base)',
+                  background: filterPriority === p ? 'var(--primary-color)' : 'var(--bg-surface)',
+                  color: filterPriority === p ? '#ffffff' : 'var(--text-secondary)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                {p}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Controls + Interactive Map + Incident Dossier */}
+      {/* Map Layout Section */}
       <div style={{
         padding: '1.5rem 2rem',
         display: 'grid',
@@ -523,454 +611,179 @@ export const IndiaIncidentMapPage: React.FC = () => {
         alignItems: 'start'
       }}>
         
-        {/* Map Canvas Column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* MAP CONTAINER (Matches Reference Images) */}
+        <div style={{
+          position: 'relative',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          border: '1px solid var(--border-base)',
+          height: '680px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          backgroundColor: '#090d16'
+        }}>
           
-          {/* Map Controls Toolbar */}
+          {/* TOP-LEFT LIVE PILL BADGE (Matching Screenshot) */}
           <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-base)',
-            borderRadius: '10px',
-            padding: '0.75rem 1rem',
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '20px',
+            padding: '6px 14px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.75rem'
+            gap: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            border: '1px solid rgba(0,0,0,0.08)'
           }}>
-            {/* Search Input */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'var(--bg-app)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '6px',
-              border: '1px solid var(--border-base)',
-              width: '260px'
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: '#16a34a',
+              boxShadow: '0 0 8px #16a34a',
+              animation: 'pulse 1.5s infinite'
+            }} />
+            <span style={{
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              letterSpacing: '0.04em',
+              color: '#1e293b'
             }}>
-              <Search size={14} color="var(--text-muted)" />
-              <input
-                type="text"
-                placeholder="Search person, ID, sector..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              LIVE • {totalCount} REPORTS
+            </span>
+          </div>
+
+          {/* TOP-RIGHT TILE LAYER SWITCHER (Matching Screenshot: STREETS | DARK | SATELLITE) */}
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '8px',
+            padding: '4px',
+            display: 'flex',
+            gap: '4px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            border: '1px solid rgba(0,0,0,0.08)'
+          }}>
+            {(['STREETS', 'DARK', 'SATELLITE'] as TileTheme[]).map(theme => (
+              <button
+                key={theme}
+                onClick={() => setTileTheme(theme)}
                 style={{
                   border: 'none',
-                  background: 'transparent',
-                  outline: 'none',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-primary)',
-                  width: '100%'
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.04em',
+                  cursor: 'pointer',
+                  background: tileTheme === theme ? '#2563eb' : 'transparent',
+                  color: tileTheme === theme ? '#ffffff' : '#64748b',
+                  transition: 'all 0.2s'
                 }}
-              />
-            </div>
-
-            {/* Priority Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Priority:</span>
-              {(['ALL', 'CRITICAL', 'HIGH', 'ROUTINE'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPriorityFilter(p)}
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    borderRadius: '4px',
-                    border: priorityFilter === p ? '1px solid var(--primary-color)' : '1px solid var(--border-base)',
-                    background: priorityFilter === p ? 'var(--primary-color)' : 'var(--bg-surface)',
-                    color: priorityFilter === p ? '#ffffff' : 'var(--text-secondary)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-
-            {/* Rajasthan Border Highlight Toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <input
-                  type="checkbox"
-                  checked={highlightRajasthan}
-                  onChange={(e) => setHighlightRajasthan(e.target.checked)}
-                  style={{ accentColor: '#e11d48' }}
-                />
-                <span>Highlight Rajasthan Border</span>
-              </label>
-            </div>
-
-            {/* Zoom Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <button
-                onClick={() => handleZoom(0.2)}
-                title="Zoom In"
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-base)', background: 'var(--bg-surface)', cursor: 'pointer' }}
               >
-                <ZoomIn size={14} />
+                {theme}
               </button>
-              <button
-                onClick={() => handleZoom(-0.2)}
-                title="Zoom Out"
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-base)', background: 'var(--bg-surface)', cursor: 'pointer' }}
-              >
-                <ZoomOut size={14} />
-              </button>
-              <button
-                onClick={handleResetView}
-                title="Reset View"
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-base)', background: 'var(--bg-surface)', cursor: 'pointer' }}
-              >
-                <Maximize2 size={14} />
-              </button>
-            </div>
+            ))}
           </div>
 
-          {/* Interactive SVG Vector Map Canvas */}
+          {/* BOTTOM-RIGHT ZOOM BUTTONS (+ / -) */}
           <div style={{
-            position: 'relative',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-base)',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-            height: '680px',
+            position: 'absolute',
+            bottom: '60px',
+            right: '16px',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <button
+              onClick={handleZoomIn}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0,0,0,0.1)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                color: '#1e293b',
+                fontSize: '18px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              }}
+            >
+              +
+            </button>
+            <button
+              onClick={handleZoomOut}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0,0,0,0.1)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                color: '#1e293b',
+                fontSize: '18px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              }}
+            >
+              −
+            </button>
+          </div>
+
+          {/* BOTTOM BAR (ACTIVE | HIGH RISK | HOTSPOTS) */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.95)',
+            borderTop: '1px solid var(--border-base)',
+            padding: '8px 20px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'space-around',
+            fontFamily: 'monospace',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            color: '#475569'
           }}>
-            
-            {/* Ambient Grid Pattern */}
-            <svg
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                opacity: 0.35
-              }}
-            >
-              <defs>
-                <pattern id="mapGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#mapGrid)" />
-            </svg>
-
-            {/* Map Vector Stage */}
-            <svg
-              viewBox="0 0 1000 1100"
-              style={{
-                width: '100%',
-                height: '100%',
-                transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
-                transition: 'transform 0.25s ease-out'
-              }}
-            >
-              <defs>
-                {/* Glowing Drop-Shadow Filter for Highlighted Rajasthan Border */}
-                <filter id="rajasthanGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#e11d48" floodOpacity="0.6" />
-                </filter>
-                <linearGradient id="rajasthanGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#e11d48" stopOpacity="0.16" />
-                  <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.08" />
-                </linearGradient>
-                <linearGradient id="fadedRegionGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.08" />
-                  <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0.04" />
-                </linearGradient>
-              </defs>
-
-              {/* OTHER STATES & REGIONS (FADED OUT A BIT) */}
-              <g id="other-regions">
-                {INDIA_REGIONS.filter(r => !r.isRajasthan).map((region) => {
-                  const isHovered = hoveredRegion?.id === region.id;
-
-                  return (
-                    <path
-                      key={region.id}
-                      d={region.d}
-                      fill={isHovered ? 'rgba(148, 163, 184, 0.25)' : 'url(#fadedRegionGrad)'}
-                      stroke={isHovered ? '#64748b' : 'rgba(148, 163, 184, 0.45)'}
-                      strokeWidth={isHovered ? '2' : '1.2'}
-                      strokeDasharray="2,2"
-                      style={{
-                        opacity: highlightRajasthan ? (isHovered ? 0.75 : 0.38) : 0.7,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={() => setHoveredRegion(region)}
-                      onMouseLeave={() => setHoveredRegion(null)}
-                    />
-                  );
-                })}
-              </g>
-
-              {/* RAJASTHAN STATE - PROMINENTLY HIGHLIGHTED BORDER & GLOW */}
-              <g id="rajasthan-highlight">
-                {INDIA_REGIONS.filter(r => r.isRajasthan).map((region) => {
-                  return (
-                    <g key={region.id}>
-                      {/* Outer Glow Halo Border */}
-                      {highlightRajasthan && (
-                        <path
-                          d={region.d}
-                          fill="none"
-                          stroke="#e11d48"
-                          strokeWidth="8"
-                          strokeOpacity="0.25"
-                          filter="url(#rajasthanGlow)"
-                        />
-                      )}
-
-                      {/* Main Prominent State Border */}
-                      <path
-                        d={region.d}
-                        fill={highlightRajasthan ? 'url(#rajasthanGrad)' : 'rgba(225, 29, 72, 0.05)'}
-                        stroke={highlightRajasthan ? '#e11d48' : '#94a3b8'}
-                        strokeWidth={highlightRajasthan ? '3.8' : '1.5'}
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        style={{
-                          cursor: 'pointer',
-                          transition: 'all 0.3s'
-                        }}
-                        onMouseEnter={() => setHoveredRegion(region)}
-                        onMouseLeave={() => setHoveredRegion(null)}
-                      />
-
-                      {/* Prominent Rajasthan Sector Label Banner */}
-                      <g transform="translate(280, 240)">
-                        <rect
-                          x="-80"
-                          y="-16"
-                          width="160"
-                          height="28"
-                          rx="6"
-                          fill="#ffffff"
-                          stroke="#e11d48"
-                          strokeWidth="1.5"
-                          filter="drop-shadow(0 2px 6px rgba(225,29,72,0.2))"
-                        />
-                        <text
-                          x="0"
-                          y="3"
-                          textAnchor="middle"
-                          fill="#e11d48"
-                          fontSize="11"
-                          fontWeight="800"
-                          fontFamily="sans-serif"
-                          letterSpacing="0.08em"
-                        >
-                          RAJASTHAN SECTOR
-                        </text>
-                      </g>
-                    </g>
-                  );
-                })}
-              </g>
-
-              {/* Key District Hub Markers in Rajasthan */}
-              {highlightRajasthan && (
-                <g id="district-hubs">
-                  {RAJASTHAN_DISTRICTS.map((d) => (
-                    <g key={d.code} transform={`translate(${d.x}, ${d.y})`}>
-                      <circle
-                        r={d.isCapital ? 6 : 4}
-                        fill={d.isCapital ? '#e11d48' : '#475569'}
-                        stroke="#ffffff"
-                        strokeWidth="1.5"
-                      />
-                      <text
-                        x={0}
-                        y={d.isCapital ? -10 : 14}
-                        textAnchor="middle"
-                        fill={d.isCapital ? '#e11d48' : '#64748b'}
-                        fontSize="9"
-                        fontWeight={d.isCapital ? '700' : '600'}
-                        fontFamily="sans-serif"
-                      >
-                        {d.name}
-                      </text>
-                    </g>
-                  ))}
-                </g>
-              )}
-
-              {/* Dynamic Live Incident Pins from Database */}
-              <g id="incident-pins">
-                {filteredPins.map((pin) => {
-                  const isSelected = selectedPin?.id === pin.id;
-                  const isHovered = hoveredPin?.id === pin.id;
-                  const isCritical = pin.priority === 'CRITICAL';
-
-                  return (
-                    <g
-                      key={pin.id}
-                      transform={`translate(${pin.x}, ${pin.y})`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setSelectedPin(pin)}
-                      onMouseEnter={() => setHoveredPin(pin)}
-                      onMouseLeave={() => setHoveredPin(null)}
-                    >
-                      {/* Pulsing Radar Ring for Critical Cases */}
-                      {isCritical && (
-                        <circle
-                          r="14"
-                          fill="none"
-                          stroke="#ef4444"
-                          strokeWidth="1.5"
-                          opacity="0.75"
-                        >
-                          <animate attributeName="r" values="8;20" dur="1.6s" repeatCount="indefinite" />
-                          <animate attributeName="opacity" values="0.8;0" dur="1.6s" repeatCount="indefinite" />
-                        </circle>
-                      )}
-
-                      {/* Selected Focus Halo */}
-                      {isSelected && (
-                        <circle
-                          r="16"
-                          fill="none"
-                          stroke="#0284c7"
-                          strokeWidth="2.5"
-                          strokeDasharray="3,3"
-                        />
-                      )}
-
-                      {/* Incident Pin Body */}
-                      <circle
-                        r={isHovered || isSelected ? 8 : 6}
-                        fill={isCritical ? '#dc2626' : pin.priority === 'HIGH' ? '#ea580c' : '#16a34a'}
-                        stroke="#ffffff"
-                        strokeWidth="2"
-                        filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
-                      />
-
-                      {/* Small Inner Core */}
-                      <circle
-                        r={2.5}
-                        fill="#ffffff"
-                      />
-                    </g>
-                  );
-                })}
-              </g>
-            </svg>
-
-            {/* Floating Interactive Hover Tooltip for States */}
-            {hoveredRegion && !hoveredPin && (
-              <div style={{
-                position: 'absolute',
-                top: '16px',
-                left: '16px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(8px)',
-                border: `1px solid ${hoveredRegion.isRajasthan ? '#e11d48' : 'var(--border-base)'}`,
-                borderRadius: '8px',
-                padding: '0.65rem 1rem',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                pointerEvents: 'none',
-                zIndex: 10
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <MapPin size={14} color={hoveredRegion.isRajasthan ? '#e11d48' : '#64748b'} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {hoveredRegion.name}
-                  </span>
-                  {hoveredRegion.isRajasthan && (
-                    <Badge variant="crimson">OPERATIONAL FOCUS</Badge>
-                  )}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  {hoveredRegion.isRajasthan 
-                    ? `Live Active Cases in Database: ${rajasthanCasesCount} cases`
-                    : 'National Disaster Grid Sector'}
-                </div>
-              </div>
-            )}
-
-            {/* Floating Interactive Tooltip for Pins */}
-            {hoveredPin && (
-              <div style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '16px',
-                background: 'rgba(255, 255, 255, 0.96)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid var(--border-base)',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
-                pointerEvents: 'none',
-                zIndex: 10,
-                maxWidth: '320px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {hoveredPin.name}
-                  </span>
-                  <Badge variant={hoveredPin.priority === 'CRITICAL' ? 'crimson' : hoveredPin.priority === 'HIGH' ? 'amber' : 'forest'}>
-                    {hoveredPin.priority}
-                  </Badge>
-                </div>
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                  {hoveredPin.caseId} • {hoveredPin.age} yrs • {hoveredPin.gender}
-                </div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={12} />
-                  <span>{hoveredPin.location} ({hoveredPin.sector})</span>
-                </div>
-              </div>
-            )}
-
-            {/* Bottom Legend */}
-            <div style={{
-              position: 'absolute',
-              bottom: '12px',
-              right: '12px',
-              background: 'rgba(255, 255, 255, 0.92)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid var(--border-base)',
-              borderRadius: '8px',
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.85rem',
-              fontSize: '0.7rem',
-              color: 'var(--text-secondary)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626' }} />
-                <span>Critical</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c' }} />
-                <span>High Priority</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }} />
-                <span>Routine</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '12px', height: '3px', background: '#e11d48', borderRadius: '2px' }} />
-                <span>Rajasthan Border</span>
-              </div>
+            <div>
+              ACTIVE: <span style={{ color: '#2563eb' }}>{totalCount}</span>
+            </div>
+            <div>
+              HIGH RISK: <span style={{ color: '#dc2626' }}>{criticalCount}</span>
+            </div>
+            <div>
+              HOTSPOTS: <span style={{ color: '#e11d48' }}>10 DISTRICTS</span>
             </div>
           </div>
+
+          {/* REAL LEAFLET MAP ELEMENT */}
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
         </div>
 
-        {/* Right Column: Case Dossier & Live Incidents Feed */}
+        {/* SIDEBAR: Selected Case Dossier & Live Database Activity */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* Selected Case Dossier Card */}
+          {/* Selected Case Dossier */}
           <div style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-base)',
@@ -985,25 +798,23 @@ export const IndiaIncidentMapPage: React.FC = () => {
                   Selected Case Dossier
                 </h3>
               </div>
-              {selectedPin ? (
+              {selectedCase && (
                 <button
-                  onClick={() => setSelectedPin(null)}
+                  onClick={() => setSelectedCase(null)}
                   style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   Clear
                 </button>
-              ) : (
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Click pin on map</span>
               )}
             </div>
 
-            {selectedPin ? (
+            {selectedCase ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  {selectedPin.photoUrl ? (
+                  {selectedCase.photoUrl ? (
                     <img
-                      src={selectedPin.photoUrl}
-                      alt={selectedPin.name}
+                      src={selectedCase.photoUrl}
+                      alt={selectedCase.name}
                       style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-base)' }}
                     />
                   ) : (
@@ -1018,26 +829,26 @@ export const IndiaIncidentMapPage: React.FC = () => {
                       justifyContent: 'center',
                       fontWeight: 700
                     }}>
-                      {selectedPin.name.slice(0, 2).toUpperCase()}
+                      {selectedCase.name?.slice(0, 2).toUpperCase()}
                     </div>
                   )}
 
                   <div>
                     <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                      {selectedPin.name}
+                      {selectedCase.name}
                     </h4>
                     <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                      {selectedPin.caseId}
+                      {selectedCase.caseId}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <Badge variant={selectedPin.priority === 'CRITICAL' ? 'crimson' : selectedPin.priority === 'HIGH' ? 'amber' : 'forest'}>
-                    {selectedPin.priority} PRIORITY
+                  <Badge variant={selectedCase.priority === 'CRITICAL' ? 'crimson' : selectedCase.priority === 'HIGH' ? 'amber' : 'forest'}>
+                    {selectedCase.priority} PRIORITY
                   </Badge>
                   <Badge variant="charcoal">
-                    {selectedPin.status}
+                    {selectedCase.status}
                   </Badge>
                 </div>
 
@@ -1053,26 +864,34 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Demographics:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedPin.gender} • {selectedPin.age} yrs</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {selectedCase.gender || 'Unknown'} • {selectedCase.age ? `${selectedCase.age} yrs` : 'Age unstated'}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Last Seen:</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>{selectedPin.location}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Location:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>
+                      {selectedCase.lastSeenLocation}
+                    </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Search Sector:</span>
-                    <span style={{ fontWeight: 600, color: '#e11d48' }}>{selectedPin.sector}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Disaster Sector:</span>
+                    <span style={{ fontWeight: 600, color: '#e11d48' }}>
+                      {selectedCase.sector}
+                    </span>
                   </div>
-                  {selectedPin.reporterContact && (
+                  {selectedCase.reporterContact && (
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Reporter Contact:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedPin.reporterContact}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>Contact:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {selectedCase.reporterContact}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 <button
-                  onClick={() => navigate(`/cases/${selectedPin.caseId}`)}
+                  onClick={() => navigate(`/cases/${selectedCase.caseId}`)}
                   style={{
                     padding: '0.65rem',
                     borderRadius: '6px',
@@ -1096,13 +915,13 @@ export const IndiaIncidentMapPage: React.FC = () => {
               <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
                 <MapPin size={28} style={{ opacity: 0.35, margin: '0 auto 0.5rem auto' }} />
                 <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                  Click on any incident pin or district hub inside the Rajasthan highlighted map to inspect the live case.
+                  Click on any district cluster or satellite pin inside the highlighted Rajasthan map to inspect live case details.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Rajasthan Emergency SAR Sector Briefing */}
+          {/* Operational Sector Overview */}
           <div style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-base)',
@@ -1113,73 +932,26 @@ export const IndiaIncidentMapPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <Shield size={16} color="#e11d48" />
               <h3 style={{ fontSize: '0.92rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                Rajasthan Triage Command
+                Rajasthan State Command
               </h3>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
-              The Rajasthan regional border is prioritized as the primary SAR coordination corridor. Intake stations at Jaipur, Jodhpur, Kota, and Udaipur route real-time telemetry straight into our biometric correlation engine.
+              Official administrative boundary highlighted with blue/cyan luminescence. Outer national zones are masked with ambient darkness to isolate field triage.
             </p>
 
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>State Response Unit:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>SDRF 1st & 2nd Battalions</span>
+                <span style={{ color: 'var(--text-muted)' }}>Active Hubs:</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Jaipur, Jodhpur, Kota, Udaipur</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>NDRF Regional Base:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>6th Battalion SAR Unit</span>
+                <span style={{ color: 'var(--text-muted)' }}>Response Units:</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>SDRF 1st Bn & NDRF 6th Bn</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Emergency Helpline:</span>
+                <span style={{ color: 'var(--text-muted)' }}>Disaster Helpline:</span>
                 <span style={{ fontWeight: 600, color: '#e11d48' }}>1070 / 112 Command</span>
               </div>
-            </div>
-          </div>
-
-          {/* Recent Reports Live Stream from MongoDB */}
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-base)',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-              <h3 style={{ fontSize: '0.92rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                Recent MongoDB Ingests
-              </h3>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Auto-Updating</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
-              {filteredPins.slice(0, 5).map(pin => (
-                <div
-                  key={pin.id}
-                  onClick={() => setSelectedPin(pin)}
-                  style={{
-                    padding: '0.5rem 0.65rem',
-                    borderRadius: '6px',
-                    background: selectedPin?.id === pin.id ? 'rgba(225, 29, 72, 0.08)' : 'var(--bg-app)',
-                    border: `1px solid ${selectedPin?.id === pin.id ? '#e11d48' : 'var(--border-subtle)'}`,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}
-                >
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                      {pin.name}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      {pin.location}
-                    </div>
-                  </div>
-                  <Badge variant={pin.priority === 'CRITICAL' ? 'crimson' : 'amber'}>
-                    {pin.priority.slice(0, 4)}
-                  </Badge>
-                </div>
-              ))}
             </div>
           </div>
 
