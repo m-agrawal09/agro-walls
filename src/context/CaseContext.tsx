@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 export type IncidentCaseStatus = 
   | 'LOOKING FOR A MATCH' 
@@ -76,7 +77,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return defaultState.caseStatus;
   });
 
-  const [priority, setPriority] = useState<'CRITICAL' | 'HIGH' | 'ROUTINE'>(() => {
+  const [priority, setPriorityState] = useState<'CRITICAL' | 'HIGH' | 'ROUTINE'>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -130,6 +131,26 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 1;
   });
 
+  // Sync state from live MongoDB backend on mount
+  useEffect(() => {
+    api.getCaseById(defaultState.caseId)
+      .then((caseDoc) => {
+        if (caseDoc) {
+          if (caseDoc.status && caseDoc.status !== 'RESOLVED') {
+            setCaseStatus(caseDoc.status as IncidentCaseStatus);
+          }
+          if (caseDoc.priority) setPriorityState(caseDoc.priority);
+          if (caseDoc.verifiedCandidate) setVerifiedCandidate(caseDoc.verifiedCandidate);
+          if (typeof caseDoc.duplicatesMerged === 'boolean') setDuplicatesMerged(caseDoc.duplicatesMerged);
+          if (caseDoc.canonicalId) setCanonicalId(caseDoc.canonicalId);
+          if (caseDoc.verificationNotes) setVerificationNotes(caseDoc.verificationNotes);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to localStorage or default state if backend is booting
+      });
+  }, []);
+
   // Save to localStorage on change
   useEffect(() => {
     const dataToSave = {
@@ -143,8 +164,7 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [caseStatus, priority, verifiedCandidate, duplicatesMerged, demoStep]);
 
   const verifyMatch = (candidateId: string, officer: string, notes: string) => {
-    setCaseStatus('VERIFIED MATCH');
-    setVerifiedCandidate({
+    const verifiedData: VerifiedCandidateInfo = {
       id: candidateId,
       name: 'Rahul Agarwal',
       ref: 'FND-2026-01892',
@@ -155,29 +175,53 @@ export const CaseProvider: React.FC<{ children: React.ReactNode }> = ({ children
       verifiedBy: officer || 'DISP-884 (Certified Dispatcher)',
       verifiedAt: '11 Sep 2026, 15:48 LOC',
       notes: notes || 'Sworn physical verification: Biometrics, healed chin scar, and clothing match intake report.',
-    });
+    };
+
+    setCaseStatus('VERIFIED MATCH');
+    setVerifiedCandidate(verifiedData);
     setVerificationNotes(notes);
+
+    // Sync to live MongoDB
+    api.verifyCase(caseId, { candidateId, officer, notes }).catch((err) => {
+      console.warn('[MongoDB Sync] verifyCase failed:', err);
+    });
   };
 
   const rejectMatch = (_candidateId: string, notes: string) => {
     setVerificationNotes(`Rejected: ${notes}`);
+    api.rejectCase(caseId, { notes }).catch((err) => {
+      console.warn('[MongoDB Sync] rejectCase failed:', err);
+    });
   };
 
   const mergeDuplicates = (canonical: string, notes: string) => {
     setDuplicatesMerged(true);
     setCanonicalId(canonical);
     setVerificationNotes(notes);
+    api.mergeDuplicates(caseId, { canonicalId: canonical, notes }).catch((err) => {
+      console.warn('[MongoDB Sync] mergeDuplicates failed:', err);
+    });
+  };
+
+  const setPriority = (p: 'CRITICAL' | 'HIGH' | 'ROUTINE') => {
+    setPriorityState(p);
+    api.setPriority(caseId, p).catch((err) => {
+      console.warn('[MongoDB Sync] setPriority failed:', err);
+    });
   };
 
   const resetDemoData = () => {
     localStorage.removeItem(STORAGE_KEY);
     setCaseStatus(defaultState.caseStatus);
-    setPriority(defaultState.priority);
+    setPriorityState(defaultState.priority);
     setVerifiedCandidate(null);
     setDuplicatesMerged(false);
     setCanonicalId(defaultState.canonicalId);
     setVerificationNotes('');
     setDemoStepState(1);
+    api.resetDemoCase().catch((err) => {
+      console.warn('[MongoDB Sync] resetDemoCase failed:', err);
+    });
   };
 
   const setDemoStep = (step: number) => {
