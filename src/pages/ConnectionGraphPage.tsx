@@ -64,19 +64,19 @@ export const ConnectionGraphPage: React.FC = () => {
   const isPanningRef = useRef<boolean>(false);
   const startPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const draggedNodeRef = useRef<GraphNode | null>(null);
+  const clickMovedRef = useRef<boolean>(false);
 
-  // Fetch graph data from MongoDB backend
+  // Fetch 100% dynamic graph data from MongoDB Atlas
   useEffect(() => {
     setLoading(true);
     api.getNetworkGraph()
       .then((data) => {
         if (data && Array.isArray(data.nodes) && data.nodes.length > 0) {
-          // Initialize random coordinates around center
           const width = 1000;
           const height = 700;
           const initializedNodes = data.nodes.map((n: GraphNode, i: number) => {
             const angle = (i / data.nodes.length) * 2 * Math.PI;
-            const dist = 150 + Math.random() * 200;
+            const dist = 140 + Math.random() * 220;
             return {
               ...n,
               x: width / 2 + Math.cos(angle) * dist,
@@ -87,9 +87,8 @@ export const ConnectionGraphPage: React.FC = () => {
           });
           setNodes(initializedNodes);
           setLinks(data.links || []);
-          if (initializedNodes.length > 0) {
-            setSelectedNode(initializedNodes[0]);
-          }
+          // In the start, keep all nodes normal (no node selected by default)
+          setSelectedNode(null);
         }
       })
       .catch((err) => {
@@ -129,6 +128,18 @@ export const ConnectionGraphPage: React.FC = () => {
     return { filteredNodes: visibleNodes, filteredLinks: visibleLinks };
   }, [nodes, links, searchQuery, sectorFilter, typeFilter]);
 
+  // Compute connected node IDs for the selected node (for isolation / fade highlight)
+  const connectedNodeIds = useMemo(() => {
+    if (!selectedNode) return null;
+    const set = new Set<string>();
+    set.add(selectedNode.id);
+    filteredLinks.forEach((l) => {
+      if (l.source === selectedNode.id) set.add(l.target);
+      if (l.target === selectedNode.id) set.add(l.source);
+    });
+    return set;
+  }, [selectedNode, filteredLinks]);
+
   // Physics Simulation Loop
   useEffect(() => {
     if (!physicsEnabled) return;
@@ -150,8 +161,8 @@ export const ConnectionGraphPage: React.FC = () => {
           if (n.isDragging) return;
           const dx = center.x - (n.x || width / 2);
           const dy = center.y - (n.y || height / 2);
-          n.vx = (n.vx || 0) + dx * 0.0005;
-          n.vy = (n.vy || 0) + dy * 0.0005;
+          n.vx = (n.vx || 0) + dx * 0.00045;
+          n.vy = (n.vy || 0) + dy * 0.00045;
         });
 
         // 2. Node-node repulsion (Coulomb force)
@@ -165,7 +176,7 @@ export const ConnectionGraphPage: React.FC = () => {
             const dist = Math.sqrt(distSq);
 
             if (dist < 320) {
-              const force = (3500 / distSq) * (a.type === 'SECTOR' || b.type === 'SECTOR' ? 1.6 : 1);
+              const force = (3600 / distSq) * (a.type === 'SECTOR' || b.type === 'SECTOR' ? 1.5 : 1);
               const fx = (dx / dist) * force;
               const fy = (dy / dist) * force;
               if (!a.isDragging) {
@@ -189,7 +200,7 @@ export const ConnectionGraphPage: React.FC = () => {
           const dx = (b.x || 0) - (a.x || 0);
           const dy = (b.y || 0) - (a.y || 0);
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const desiredDist = link.type === 'BIOMETRIC_MATCH' ? 110 : link.type === 'LAST_SEEN_AT' ? 140 : 120;
+          const desiredDist = link.type === 'BIOMETRIC_MATCH' ? 115 : link.type === 'LAST_SEEN_AT' ? 145 : 125;
           const force = (dist - desiredDist) * 0.02 * (link.strength || 0.7);
 
           const fx = (dx / dist) * force;
@@ -214,7 +225,7 @@ export const ConnectionGraphPage: React.FC = () => {
           n.x = (n.x || width / 2) + (n.vx || 0);
           n.y = (n.y || height / 2) + (n.vy || 0);
 
-          // Boundary bounce / bounds keeping
+          // Bounds containment
           n.x = Math.max(50, Math.min(width - 50, n.x));
           n.y = Math.max(50, Math.min(height - 50, n.y));
         });
@@ -229,7 +240,7 @@ export const ConnectionGraphPage: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [physicsEnabled, links]);
 
-  // Render Canvas
+  // Render Canvas (Light theme matching platform tokens)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -243,21 +254,22 @@ export const ConnectionGraphPage: React.FC = () => {
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    // Clear background
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    // 1. Draw Clean Warm Off-White Background (Matches --bg-app #f7f6f2)
+    ctx.fillStyle = '#f7f6f2';
+    ctx.fillRect(0, 0, rect.width, rect.height);
 
-    // Draw Cybernetic Background Grid
     ctx.save();
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
 
+    // 2. Draw Subtle Light Tactical Grid Lines
     const gridSize = 36;
     const startX = -transform.x / transform.k - 100;
     const endX = (rect.width - transform.x) / transform.k + 100;
     const startY = -transform.y / transform.k - 100;
     const endY = (rect.height - transform.y) / transform.k + 100;
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
     ctx.lineWidth = 1 / transform.k;
 
     ctx.beginPath();
@@ -274,7 +286,7 @@ export const ConnectionGraphPage: React.FC = () => {
     const nodeMap = new Map<string, GraphNode>();
     filteredNodes.forEach((n) => nodeMap.set(n.id, n));
 
-    // Draw Links
+    // 3. Draw Links (With Selective Highlight & Fade)
     filteredLinks.forEach((link) => {
       const source = nodeMap.get(link.source);
       const target = nodeMap.get(link.target);
@@ -285,28 +297,39 @@ export const ConnectionGraphPage: React.FC = () => {
       const isLinkHovered = hoveredLink === link;
 
       ctx.save();
+
+      // FADE LOGIC: If a node is selected, fade out all links NOT connecting to it!
+      if (selectedNode) {
+        ctx.globalAlpha = isConnectedToSelected ? 1.0 : 0.06;
+      } else if (hoveredNode) {
+        ctx.globalAlpha = isConnectedToHovered ? 1.0 : 0.25;
+      } else {
+        // In the start: all normal!
+        ctx.globalAlpha = 0.55;
+      }
+
       ctx.beginPath();
       ctx.moveTo(source.x, source.y!);
       ctx.lineTo(target.x, target.y!);
 
-      let linkColor = 'rgba(100, 116, 139, 0.28)';
-      let lineWidth = 1.2;
+      let linkColor = '#94a3b8';
+      let lineWidth = 1.4;
 
       if (link.type === 'BIOMETRIC_MATCH') {
-        linkColor = isConnectedToSelected || isLinkHovered ? '#f59e0b' : 'rgba(245, 158, 11, 0.65)';
+        linkColor = isConnectedToSelected || isLinkHovered ? '#b45309' : '#d97706';
         lineWidth = 2.4;
         ctx.setLineDash([4, 3]);
       } else if (link.type === 'LAST_SEEN_AT') {
-        linkColor = isConnectedToSelected || isLinkHovered ? '#a855f7' : 'rgba(168, 85, 247, 0.45)';
+        linkColor = isConnectedToSelected || isLinkHovered ? '#7c3aed' : '#8b5cf6';
         lineWidth = 1.8;
       } else if (link.type === 'SHELTERED_IN') {
-        linkColor = isConnectedToSelected || isLinkHovered ? '#38bdf8' : 'rgba(56, 189, 248, 0.45)';
+        linkColor = isConnectedToSelected || isLinkHovered ? '#1d4ed8' : '#3b82f6';
         lineWidth = 1.8;
       } else if (link.type === 'FAMILY_INTAKE') {
-        linkColor = isConnectedToSelected || isLinkHovered ? '#10b981' : 'rgba(16, 185, 129, 0.45)';
+        linkColor = isConnectedToSelected || isLinkHovered ? '#166534' : '#10b981';
         lineWidth = 1.6;
       } else if (link.type === 'DUPLICATE_CLUSTER') {
-        linkColor = '#ef4444';
+        linkColor = '#991b1b';
         lineWidth = 2;
         ctx.setLineDash([3, 2]);
       }
@@ -319,20 +342,20 @@ export const ConnectionGraphPage: React.FC = () => {
       ctx.lineWidth = lineWidth / transform.k;
       ctx.stroke();
 
-      // Draw link badge if Biometric match
-      if (link.confidence && (isConnectedToSelected || isLinkHovered || link.confidence >= 90)) {
+      // Draw match confidence badge
+      if (link.confidence && (isConnectedToSelected || isLinkHovered || (!selectedNode && link.confidence >= 90))) {
         const midX = (source.x + target.x) / 2;
         const midY = (source.y! + target.y!) / 2;
 
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#ffffff';
         ctx.strokeStyle = linkColor;
-        ctx.lineWidth = 1 / transform.k;
+        ctx.lineWidth = 1.2 / transform.k;
         const text = `${link.confidence}% MATCH`;
-        ctx.font = `${9 / transform.k}px "JetBrains Mono", monospace`;
+        ctx.font = `bold ${9 / transform.k}px "IBM Plex Mono", monospace`;
         const textWidth = ctx.measureText(text).width;
 
         ctx.beginPath();
-        ctx.roundRect(midX - textWidth / 2 - 4, midY - 7, textWidth + 8, 14, 3);
+        ctx.roundRect(midX - textWidth / 2 - 5, midY - 8, textWidth + 10, 16, 3);
         ctx.fill();
         ctx.stroke();
 
@@ -345,21 +368,38 @@ export const ConnectionGraphPage: React.FC = () => {
       ctx.restore();
     });
 
-    // Draw Nodes
+    // 4. Draw Nodes (With Selective Highlight & Fade)
     filteredNodes.forEach((node) => {
       if (node.x === undefined || node.y === undefined) return;
       const isSelected = selectedNode?.id === node.id;
+      const isConnected = connectedNodeIds ? connectedNodeIds.has(node.id) : true;
       const isHovered = hoveredNode?.id === node.id;
 
       ctx.save();
 
-      // Outer glow if selected or hovered
-      if (isSelected || isHovered) {
+      // FADE LOGIC: If a node is selected, keep connected nodes normal, but FADE OUT all other nodes!
+      if (selectedNode) {
+        ctx.globalAlpha = isConnected ? 1.0 : 0.12;
+      } else if (hoveredNode) {
+        ctx.globalAlpha = isHovered || (links.some(l => (l.source === hoveredNode.id && l.target === node.id) || (l.target === hoveredNode.id && l.source === node.id))) ? 1.0 : 0.35;
+      } else {
+        // In the start: all normal!
+        ctx.globalAlpha = 1.0;
+      }
+
+      // Outer Selection / Focus Ring
+      if (isSelected) {
         ctx.beginPath();
-        ctx.arc(node.x, node.y, (node.size + 10) / transform.k, 0, 2 * Math.PI);
-        ctx.fillStyle = `${node.color}33`;
+        ctx.arc(node.x, node.y, (node.size + 11) / transform.k, 0, 2 * Math.PI);
+        ctx.fillStyle = `${node.color}22`;
         ctx.fill();
 
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, (node.size + 5) / transform.k, 0, 2 * Math.PI);
+        ctx.strokeStyle = node.color;
+        ctx.lineWidth = 2.5 / transform.k;
+        ctx.stroke();
+      } else if (isHovered) {
         ctx.beginPath();
         ctx.arc(node.x, node.y, (node.size + 4) / transform.k, 0, 2 * Math.PI);
         ctx.strokeStyle = node.color;
@@ -367,38 +407,45 @@ export const ConnectionGraphPage: React.FC = () => {
         ctx.stroke();
       }
 
-      // Base Node Circle
+      // Base Node Solid Circle
       ctx.beginPath();
       ctx.arc(node.x, node.y, node.size / transform.k, 0, 2 * Math.PI);
       ctx.fillStyle = node.color;
       ctx.fill();
-      ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = (isSelected ? 2.5 : 1) / transform.k;
+
+      ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = (isSelected ? 2.5 : 1.5) / transform.k;
       ctx.stroke();
 
-      // Node Letter Symbol
+      // Node Letter Initial Icon
       const initial = node.type === 'PERSON' ? 'P' : node.type === 'FACILITY' ? 'H' : node.type === 'SECTOR' ? 'S' : node.type === 'CANDIDATE' ? 'M' : 'C';
       ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.max(10, node.size * 0.75) / transform.k}px Inter, sans-serif`;
+      ctx.font = `bold ${Math.max(10, node.size * 0.75) / transform.k}px "IBM Plex Sans", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(initial, node.x, node.y + 0.5);
 
-      // Node Label below
-      ctx.font = `${Math.max(10, 11 / transform.k)}px Inter, sans-serif`;
-      ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
+      // Node Label Text (Dark charcoal with background badge for maximum contrast on light canvas)
+      ctx.font = `600 ${Math.max(10, 11 / transform.k)}px "IBM Plex Sans", sans-serif`;
+      const displayName = node.name.length > 20 ? `${node.name.slice(0, 18)}...` : node.name;
+      const textWidth = ctx.measureText(displayName).width;
+      const labelY = node.y + (node.size + 4) / transform.k;
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(node.x - textWidth / 2 - 3, labelY - 2, textWidth + 6, 15 / transform.k, 2);
+      ctx.fill();
+
+      ctx.fillStyle = isSelected ? '#0f172a' : '#334155';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-
-      // Truncate long names
-      const displayName = node.name.length > 20 ? `${node.name.slice(0, 18)}...` : node.name;
-      ctx.fillText(displayName, node.x, node.y + (node.size + 4) / transform.k);
+      ctx.fillText(displayName, node.x, labelY);
 
       ctx.restore();
     });
 
     ctx.restore();
-  }, [filteredNodes, filteredLinks, transform, selectedNode, hoveredNode, hoveredLink]);
+  }, [filteredNodes, filteredLinks, transform, selectedNode, hoveredNode, hoveredLink, connectedNodeIds]);
 
   // Screen to Canvas Coordinates helper
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -420,7 +467,7 @@ export const ConnectionGraphPage: React.FC = () => {
       if (n.x === undefined || n.y === undefined) continue;
       const dx = cx - n.x;
       const dy = cy - n.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= n.size + 6) {
+      if (Math.sqrt(dx * dx + dy * dy) <= n.size + 7) {
         return n;
       }
     }
@@ -429,6 +476,7 @@ export const ConnectionGraphPage: React.FC = () => {
 
   // Mouse Event Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    clickMovedRef.current = false;
     const coords = getCanvasCoords(e);
     const clickedNode = getNodeAtCoords(coords.x, coords.y);
 
@@ -443,6 +491,7 @@ export const ConnectionGraphPage: React.FC = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    clickMovedRef.current = true;
     const coords = getCanvasCoords(e);
 
     if (draggedNodeRef.current) {
@@ -496,6 +545,17 @@ export const ConnectionGraphPage: React.FC = () => {
       draggedNodeRef.current = null;
     }
     isPanningRef.current = false;
+  };
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // If user merely clicked on empty canvas without panning, unselect node and return all to normal!
+    if (!clickMovedRef.current) {
+      const coords = getCanvasCoords(e);
+      const clickedNode = getNodeAtCoords(coords.x, coords.y);
+      if (!clickedNode) {
+        setSelectedNode(null);
+      }
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -561,13 +621,13 @@ export const ConnectionGraphPage: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100%',
-      backgroundColor: '#090d16',
-      color: '#e2e8f0',
+      backgroundColor: 'var(--bg-app)',
+      color: 'var(--text-primary)',
     }}>
       {/* Top Header */}
       <div style={{
-        backgroundColor: '#0f172a',
-        borderBottom: '1px solid #1e293b',
+        backgroundColor: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-base)',
         padding: 'var(--space-4) var(--space-8)',
       }}>
         <div style={{
@@ -584,7 +644,7 @@ export const ConnectionGraphPage: React.FC = () => {
               gap: '6px',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: '#94a3b8',
+              color: 'var(--text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
             }}>
@@ -592,18 +652,18 @@ export const ConnectionGraphPage: React.FC = () => {
               <span>•</span>
               <span>INTELLIGENCE GRAPH</span>
               <span>•</span>
-              <span style={{ color: '#10b981', fontWeight: 600 }}>LIVE TOPOLOGY</span>
+              <span style={{ color: 'var(--color-forest-text)', fontWeight: 600 }}>LIVE MONGODB TOPOLOGY</span>
             </div>
             <h1 style={{
               fontSize: 'var(--text-xl)',
               fontWeight: 700,
-              color: '#f8fafc',
+              color: 'var(--text-primary)',
               letterSpacing: '-0.02em',
               margin: '2px 0 0 0',
             }}>
               Entity Connection Network & Link Analysis
             </h1>
-            <p style={{ fontSize: 'var(--text-xs)', color: '#94a3b8', margin: '2px 0 0 0' }}>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
               Physics-enabled topological correlation graph mapping relationships between missing persons, relief facilities, family reporters, and disaster search sectors.
             </p>
           </div>
@@ -611,43 +671,43 @@ export const ConnectionGraphPage: React.FC = () => {
           {/* Quick Metrics Bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             <div style={{
-              backgroundColor: '#1e293b',
+              backgroundColor: 'var(--bg-surface)',
               padding: '6px 12px',
               borderRadius: 'var(--radius-sm)',
               fontSize: '11px',
-              border: '1px solid #334155',
+              border: '1px solid var(--border-base)',
             }}>
-              <span style={{ color: '#94a3b8' }}>ENTITIES: </span>
-              <strong style={{ color: '#f8fafc' }}>{nodes.length}</strong>
+              <span style={{ color: 'var(--text-muted)' }}>ENTITIES: </span>
+              <strong style={{ color: 'var(--text-primary)' }}>{nodes.length}</strong>
             </div>
             <div style={{
-              backgroundColor: '#1e293b',
+              backgroundColor: 'var(--bg-surface)',
               padding: '6px 12px',
               borderRadius: 'var(--radius-sm)',
               fontSize: '11px',
-              border: '1px solid #334155',
+              border: '1px solid var(--border-base)',
             }}>
-              <span style={{ color: '#94a3b8' }}>RELATIONSHIPS: </span>
-              <strong style={{ color: '#38bdf8' }}>{links.length}</strong>
+              <span style={{ color: 'var(--text-muted)' }}>RELATIONSHIPS: </span>
+              <strong style={{ color: 'var(--color-forest-text)' }}>{links.length}</strong>
             </div>
             <div style={{
-              backgroundColor: '#1e293b',
+              backgroundColor: 'var(--bg-surface)',
               padding: '6px 12px',
               borderRadius: 'var(--radius-sm)',
               fontSize: '11px',
-              border: '1px solid #334155',
+              border: '1px solid var(--border-base)',
             }}>
-              <span style={{ color: '#94a3b8' }}>MATCH PAIRS: </span>
-              <strong style={{ color: '#f59e0b' }}>{metrics.matchesCount}</strong>
+              <span style={{ color: 'var(--text-muted)' }}>MATCH PAIRS: </span>
+              <strong style={{ color: 'var(--color-amber-text)' }}>{metrics.matchesCount}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Top Search & Filter Bar (Matching screenshot layout) */}
+      {/* Top Search & Filter Bar (Matching clean light theme layout) */}
       <div style={{
-        backgroundColor: '#0c1222',
-        borderBottom: '1px solid #1e293b',
+        backgroundColor: 'var(--bg-subtle)',
+        borderBottom: '1px solid var(--border-base)',
         padding: 'var(--space-3) var(--space-8)',
       }}>
         <div style={{
@@ -658,7 +718,7 @@ export const ConnectionGraphPage: React.FC = () => {
         }}>
           {/* Search Box */}
           <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
               value={searchQuery}
@@ -666,12 +726,12 @@ export const ConnectionGraphPage: React.FC = () => {
               placeholder="Search person, facility, reporter, sector..."
               style={{
                 width: '100%',
-                backgroundColor: '#1e293b',
-                border: '1px solid #334155',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-base)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '7px 12px 7px 34px',
                 fontSize: '12px',
-                color: '#f8fafc',
+                color: 'var(--text-primary)',
                 outline: 'none',
               }}
             />
@@ -682,12 +742,12 @@ export const ConnectionGraphPage: React.FC = () => {
             value={sectorFilter}
             onChange={(e) => setSectorFilter(e.target.value)}
             style={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-base)',
               borderRadius: 'var(--radius-sm)',
               padding: '7px 12px',
               fontSize: '12px',
-              color: '#f8fafc',
+              color: 'var(--text-primary)',
               outline: 'none',
               cursor: 'pointer',
             }}
@@ -703,12 +763,12 @@ export const ConnectionGraphPage: React.FC = () => {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             style={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-base)',
               borderRadius: 'var(--radius-sm)',
               padding: '7px 12px',
               fontSize: '12px',
-              color: '#f8fafc',
+              color: 'var(--text-primary)',
               outline: 'none',
               cursor: 'pointer',
             }}
@@ -724,17 +784,16 @@ export const ConnectionGraphPage: React.FC = () => {
           {/* Physics Toggle Button */}
           <button
             onClick={() => setPhysicsEnabled(!physicsEnabled)}
-            className="btn"
+            className="btn btn-secondary"
             style={{
-              backgroundColor: physicsEnabled ? '#1e293b' : '#334155',
-              border: `1px solid ${physicsEnabled ? '#3b82f6' : '#475569'}`,
-              color: physicsEnabled ? '#60a5fa' : '#94a3b8',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               fontSize: '12px',
               padding: '7px 14px',
               cursor: 'pointer',
+              borderColor: physicsEnabled ? 'var(--color-forest)' : 'var(--border-base)',
+              color: physicsEnabled ? 'var(--color-forest-text)' : 'var(--text-secondary)',
             }}
           >
             {physicsEnabled ? <Pause size={13} /> : <Play size={13} />}
@@ -744,11 +803,8 @@ export const ConnectionGraphPage: React.FC = () => {
           {/* Center Button */}
           <button
             onClick={handleResetCenter}
-            className="btn"
+            className="btn btn-secondary"
             style={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              color: '#f8fafc',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
@@ -760,6 +816,29 @@ export const ConnectionGraphPage: React.FC = () => {
             <RotateCcw size={13} />
             <span>Center</span>
           </button>
+
+          {/* Unselect / Reset Highlight if a node is selected */}
+          {selectedNode && (
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="btn btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                padding: '7px 12px',
+                cursor: 'pointer',
+                backgroundColor: 'var(--color-crimson-bg)',
+                borderColor: 'var(--color-crimson-border)',
+                color: 'var(--color-crimson-text)',
+              }}
+              title="Clear selection and restore all nodes to normal"
+            >
+              <X size={12} />
+              <span>Show All Nodes (Unfade)</span>
+            </button>
+          )}
         </div>
 
         {/* Entity Layers Legend Bar */}
@@ -769,30 +848,30 @@ export const ConnectionGraphPage: React.FC = () => {
           gap: 'var(--space-4)',
           marginTop: 'var(--space-3)',
           fontSize: '11px',
-          color: '#94a3b8',
+          color: 'var(--text-secondary)',
           flexWrap: 'wrap',
         }}>
-          <span style={{ fontWeight: 600, color: '#cbd5e1', letterSpacing: '0.04em' }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
             ENTITY LAYERS:
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }} />
-            <span>Missing Person / Active Docket</span>
+            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
+            <span>Missing Person / Active Dossier</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#3b82f6', display: 'inline-block' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#2563eb', display: 'inline-block' }} />
             <span>Shelter / Hospital / Unit</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', display: 'inline-block' }} />
             <span>Complainant / Citizen Reporter</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#7c3aed', display: 'inline-block' }} />
             <span>Disaster Sector / Cluster Hub</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+            <span style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#d97706', display: 'inline-block' }} />
             <span>Correlated Candidate Lead</span>
           </div>
         </div>
@@ -810,7 +889,7 @@ export const ConnectionGraphPage: React.FC = () => {
         <div style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: '#090d16',
+          backgroundColor: '#f7f6f2',
           cursor: isPanningRef.current ? 'grabbing' : 'grab',
         }}>
           <canvas
@@ -819,6 +898,7 @@ export const ConnectionGraphPage: React.FC = () => {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onClick={handleCanvasClick}
             onWheel={handleWheel}
           />
 
@@ -829,17 +909,18 @@ export const ConnectionGraphPage: React.FC = () => {
               top: 20,
               left: 20,
               zIndex: 15,
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              border: '1px solid #38bdf8',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid var(--color-forest-border)',
               borderRadius: 'var(--radius-sm)',
               padding: '8px 14px',
               fontSize: '12px',
-              color: '#38bdf8',
+              color: 'var(--color-forest-text)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
-              <span style={{ animation: 'pulse 1.5s infinite' }}>⚡ Fetching live topological nodes from MongoDB...</span>
+              <span>⚡ Fetching live topological nodes from MongoDB Atlas...</span>
             </div>
           )}
 
@@ -850,18 +931,18 @@ export const ConnectionGraphPage: React.FC = () => {
               bottom: 60,
               left: 20,
               maxWidth: '560px',
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              border: '1px solid #38bdf8',
+              backgroundColor: 'rgba(255, 255, 255, 0.96)',
+              border: '1px solid var(--border-base)',
               borderRadius: 'var(--radius-sm)',
               padding: '10px 14px',
               fontSize: '12px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
               zIndex: 25,
             }}>
-              <div style={{ color: '#38bdf8', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>
+              <div style={{ color: 'var(--color-forest-text)', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>
                 🔗 LINK REASON: {hoveredLink.label}
               </div>
-              <div style={{ color: '#f8fafc', lineHeight: 1.4 }}>
+              <div style={{ color: 'var(--text-primary)', lineHeight: 1.4 }}>
                 {hoveredLink.reason}
               </div>
             </div>
@@ -873,35 +954,36 @@ export const ConnectionGraphPage: React.FC = () => {
             top: 16,
             right: selectedNode ? 420 : 20,
             transition: 'right 0.2s ease',
-            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            backgroundColor: 'rgba(255, 255, 255, 0.94)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid #1e293b',
+            border: '1px solid var(--border-base)',
             borderRadius: 'var(--radius-sm)',
             padding: '10px 14px',
             fontSize: '11px',
-            color: '#cbd5e1',
+            color: 'var(--text-secondary)',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.08)',
             pointerEvents: 'none',
             zIndex: 10,
           }}>
-            <div style={{ fontWeight: 700, color: '#f8fafc', marginBottom: '4px', letterSpacing: '0.04em' }}>GRAPH LEGEND</div>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '0.04em' }}>GRAPH LEGEND</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#ef4444' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#dc2626' }} />
               <span>Missing Person</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
-              <span>Police / Shelter / Unit</span>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#2563eb' }} />
+              <span>Shelter / Hospital / Unit</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#10b981' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#059669' }} />
               <span>Complainant / Citizen</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#a855f7' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#7c3aed' }} />
               <span>Disaster Sector Hub</span>
             </div>
-            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #334155', color: '#f59e0b', fontSize: '10px' }}>
-              ⓘ Click node for details & why connected
+            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--border-subtle)', color: 'var(--color-amber-text)', fontSize: '10px', fontWeight: 600 }}>
+              ⓘ Click node to isolate & fade other connections
             </div>
           </div>
 
@@ -913,12 +995,13 @@ export const ConnectionGraphPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            backgroundColor: 'rgba(15, 23, 42, 0.85)',
-            padding: '4px 8px',
+            backgroundColor: 'rgba(255, 255, 255, 0.94)',
+            padding: '4px 10px',
             borderRadius: 'var(--radius-sm)',
-            border: '1px solid #1e293b',
+            border: '1px solid var(--border-base)',
             fontSize: '11px',
-            color: '#94a3b8',
+            color: 'var(--text-secondary)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
           }}>
             <span>Zoom: <strong>{Math.round(transform.k * 100)}%</strong></span>
             <span>•</span>
@@ -927,24 +1010,24 @@ export const ConnectionGraphPage: React.FC = () => {
         </div>
 
         {/* =========================================================================
-            RIGHT-SIDE NODE DETAILS DOSSIER (Matches NodeDetailsDossier.jsx from user)
+            RIGHT-SIDE NODE DETAILS DOSSIER (Matches platform light theme specification)
             ========================================================================= */}
         {selectedNode && (
           <div style={{
             width: '400px',
-            backgroundColor: '#0f172a',
-            borderLeft: '1px solid #1e293b',
+            backgroundColor: 'var(--bg-surface)',
+            borderLeft: '1px solid var(--border-base)',
             display: 'flex',
             flexDirection: 'column',
             overflowY: 'auto',
             zIndex: 20,
-            boxShadow: '-4px 0 20px rgba(0,0,0,0.4)',
+            boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.08)',
           }}>
             {/* Dossier Header */}
             <div style={{
               padding: 'var(--space-4) var(--space-5)',
-              borderBottom: '1px solid #1e293b',
-              backgroundColor: '#0c1222',
+              borderBottom: '1px solid var(--border-base)',
+              backgroundColor: 'var(--bg-subtle)',
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
@@ -963,12 +1046,12 @@ export const ConnectionGraphPage: React.FC = () => {
                 <h3 style={{
                   fontSize: 'var(--text-lg)',
                   fontWeight: 700,
-                  color: '#f8fafc',
+                  color: 'var(--text-primary)',
                   margin: '2px 0 0 0',
                 }}>
                   {selectedNode.name}
                 </h3>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                   {selectedNode.sublabel}
                 </span>
               </div>
@@ -976,7 +1059,8 @@ export const ConnectionGraphPage: React.FC = () => {
               <button
                 onClick={() => setSelectedNode(null)}
                 className="btn btn-ghost"
-                style={{ padding: '4px', color: '#94a3b8' }}
+                style={{ padding: '4px', color: 'var(--text-muted)' }}
+                title="Close dossier and un-fade network"
               >
                 <X size={16} />
               </button>
@@ -987,10 +1071,10 @@ export const ConnectionGraphPage: React.FC = () => {
               {/* Photo & Identity Banner if Person */}
               {selectedNode.type === 'PERSON' && selectedNode.details && (
                 <div style={{
-                  backgroundColor: '#1e293b',
+                  backgroundColor: 'var(--bg-app)',
                   borderRadius: 'var(--radius-sm)',
                   padding: 'var(--space-4)',
-                  border: '1px solid #334155',
+                  border: '1px solid var(--border-base)',
                   display: 'flex',
                   gap: 'var(--space-3)',
                 }}>
@@ -1003,6 +1087,7 @@ export const ConnectionGraphPage: React.FC = () => {
                         height: '76px',
                         borderRadius: 'var(--radius-xs)',
                         objectFit: 'cover',
+                        border: '1px solid var(--border-base)',
                       }}
                     />
                   ) : (
@@ -1010,11 +1095,12 @@ export const ConnectionGraphPage: React.FC = () => {
                       width: '64px',
                       height: '76px',
                       borderRadius: 'var(--radius-xs)',
-                      backgroundColor: '#334155',
+                      backgroundColor: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-base)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#94a3b8',
+                      color: 'var(--text-muted)',
                     }}>
                       <Users size={28} />
                     </div>
@@ -1022,7 +1108,7 @@ export const ConnectionGraphPage: React.FC = () => {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 600 }}>
                         {selectedNode.id}
                       </span>
                       {selectedNode.priority && (
@@ -1032,13 +1118,13 @@ export const ConnectionGraphPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-primary)', marginTop: '4px' }}>
                       <strong>Status:</strong> {selectedNode.status || 'LOOKING FOR A MATCH'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                       <strong>Sector:</strong> {selectedNode.sector || 'Unassigned'}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                       <strong>Last Seen:</strong> {selectedNode.details.lastSeenLocation || 'Flood Basin'}
                     </div>
                   </div>
@@ -1048,16 +1134,16 @@ export const ConnectionGraphPage: React.FC = () => {
               {/* Physical Marks / Attire Details */}
               {selectedNode.details?.keyMarks && (
                 <div style={{
-                  backgroundColor: '#1e293b',
+                  backgroundColor: 'var(--bg-app)',
                   borderRadius: 'var(--radius-sm)',
                   padding: 'var(--space-3) var(--space-4)',
                   fontSize: '11px',
-                  border: '1px solid #334155',
+                  border: '1px solid var(--border-base)',
                 }}>
-                  <span style={{ color: '#94a3b8', display: 'block', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', fontWeight: 600, marginBottom: '2px', fontSize: '10px' }}>
                     KEY PHYSICAL BIOMETRICS & MARKS
                   </span>
-                  <p style={{ margin: 0, color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, color: 'var(--text-primary)', lineHeight: 1.4 }}>
                     {selectedNode.details.keyMarks}
                   </p>
                 </div>
@@ -1066,16 +1152,16 @@ export const ConnectionGraphPage: React.FC = () => {
               {/* Facility Details */}
               {selectedNode.type === 'FACILITY' && (
                 <div style={{
-                  backgroundColor: '#1e293b',
+                  backgroundColor: 'var(--bg-app)',
                   borderRadius: 'var(--radius-sm)',
                   padding: 'var(--space-3) var(--space-4)',
                   fontSize: '11px',
-                  border: '1px solid #334155',
+                  border: '1px solid var(--border-base)',
                 }}>
-                  <span style={{ color: '#38bdf8', display: 'block', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: '#2563eb', display: 'block', fontWeight: 600, marginBottom: '2px', fontSize: '10px' }}>
                     HOLDING & ADMISSION FACILITY
                   </span>
-                  <p style={{ margin: 0, color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                     Official disaster triage and relief shelter facility with active CAD telemetry feed. Currently housing unidentified rescues and candidate matches.
                   </p>
                 </div>
@@ -1084,16 +1170,16 @@ export const ConnectionGraphPage: React.FC = () => {
               {/* Sector Details */}
               {selectedNode.type === 'SECTOR' && (
                 <div style={{
-                  backgroundColor: '#1e293b',
+                  backgroundColor: 'var(--bg-app)',
                   borderRadius: 'var(--radius-sm)',
                   padding: 'var(--space-3) var(--space-4)',
                   fontSize: '11px',
-                  border: '1px solid #334155',
+                  border: '1px solid var(--border-base)',
                 }}>
-                  <span style={{ color: '#c084fc', display: 'block', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ color: '#7c3aed', display: 'block', fontWeight: 600, marginBottom: '2px', fontSize: '10px' }}>
                     GEOSPATIAL SEARCH SECTOR
                   </span>
-                  <p style={{ margin: 0, color: '#e2e8f0', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                     Active search & rescue sector under NDRF / SDRF jurisdiction. Links all persons last seen within these riverfront and low-lying flood coordinates.
                   </p>
                 </div>
@@ -1113,17 +1199,17 @@ export const ConnectionGraphPage: React.FC = () => {
                     fontSize: '11px',
                     fontFamily: 'var(--font-mono)',
                     fontWeight: 700,
-                    color: '#94a3b8',
+                    color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
                   }}>
                     CONNECTED RELATIONSHIPS ({selectedNodeRelationships.length})
                   </span>
-                  <span style={{ fontSize: '10px', color: '#64748b' }}>TOPOLOGICAL LINKS</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>ISOLATED SUBGRAPH</span>
                 </div>
 
                 {selectedNodeRelationships.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '8px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '8px' }}>
                     No direct links recorded in active cluster.
                   </div>
                 ) : (
@@ -1132,8 +1218,8 @@ export const ConnectionGraphPage: React.FC = () => {
                       <div
                         key={idx}
                         style={{
-                          backgroundColor: '#1e293b',
-                          border: '1px solid #334155',
+                          backgroundColor: 'var(--bg-surface)',
+                          border: '1px solid var(--border-base)',
                           borderRadius: 'var(--radius-sm)',
                           padding: 'var(--space-3)',
                           cursor: 'pointer',
@@ -1152,9 +1238,9 @@ export const ConnectionGraphPage: React.FC = () => {
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              backgroundColor: otherNode?.color || '#94a3b8',
+                              backgroundColor: otherNode?.color || 'var(--text-muted)',
                             }} />
-                            <strong style={{ fontSize: '12px', color: '#f8fafc' }}>
+                            <strong style={{ fontSize: '12px', color: 'var(--text-primary)' }}>
                               {otherNode?.name || link.target}
                             </strong>
                           </div>
@@ -1177,15 +1263,15 @@ export const ConnectionGraphPage: React.FC = () => {
                         {/* EXPLANATION OF WHY THEY ARE CONNECTED */}
                         <div style={{
                           fontSize: '11px',
-                          color: '#94a3b8',
+                          color: 'var(--text-secondary)',
                           lineHeight: 1.4,
                           marginTop: '4px',
-                          backgroundColor: '#0f172a',
+                          backgroundColor: 'var(--bg-app)',
                           padding: '6px 8px',
                           borderRadius: 'var(--radius-xs)',
-                          borderLeft: `2px solid ${otherNode?.color || '#3b82f6'}`,
+                          borderLeft: `2px solid ${otherNode?.color || 'var(--color-forest)'}`,
                         }}>
-                          <span style={{ color: '#cbd5e1', fontWeight: 600, display: 'block', fontSize: '10px' }}>
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 600, display: 'block', fontSize: '10px' }}>
                             REASON FOR CONNECTION:
                           </span>
                           {link.reason}
@@ -1227,8 +1313,8 @@ export const ConnectionGraphPage: React.FC = () => {
                       gap: '8px',
                       fontSize: '12px',
                       padding: '8px 14px',
-                      backgroundColor: '#dc2626',
-                      borderColor: '#dc2626',
+                      backgroundColor: 'var(--color-crimson)',
+                      borderColor: 'var(--color-crimson)',
                     }}
                   >
                     <span>Inspect Match in Workspace</span>
