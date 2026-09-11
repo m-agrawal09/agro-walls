@@ -6,46 +6,46 @@
    ========================================================================== */
 
 :root {
-  /* Surface & Background Palette */
-  --bg-app: #f7f6f2;
-  --bg-subtle: #f0eee8;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #faf9f6;
-  --bg-surface-active: #ebe9e3;
-  --bg-panel: #ffffff;
+  /* Surface & Background Palette - Enhanced Glassmorphic Transparency */
+  --bg-app: transparent;
+  --bg-subtle: rgba(255, 255, 255, 0.22);
+  --bg-surface: rgba(255, 255, 255, 0.44);
+  --bg-surface-hover: rgba(255, 255, 255, 0.62);
+  --bg-surface-active: rgba(255, 255, 255, 0.70);
+  --bg-panel: rgba(255, 255, 255, 0.48);
 
   /* Typography Colors */
   --text-primary: #121417;
-  --text-secondary: #424651;
-  --text-muted: #6f7582;
-  --text-disabled: #a1a6b0;
+  --text-secondary: #2f343b;
+  --text-muted: #575d6b;
+  --text-disabled: #8a909d;
   --text-inverse: #ffffff;
 
   /* Structural 1px Borders */
-  --border-subtle: #e8e6df;
-  --border-base: #dcdace;
-  --border-strong: #bcbaa0;
-  --border-focus: #121417;
+  --border-subtle: rgba(255, 255, 255, 0.35);
+  --border-base: rgba(255, 255, 255, 0.48);
+  --border-strong: rgba(180, 205, 235, 0.60);
+  --border-focus: #4c75ba;
 
   /* Operational Accents: Forest Green (Resolved / Verified / Normal Ops) */
   --color-forest: #1e4620;
   --color-forest-hover: #163618;
-  --color-forest-bg: #f1f7f2;
-  --color-forest-border: #cde6d2;
+  --color-forest-bg: rgba(241, 247, 242, 0.55);
+  --color-forest-border: rgba(205, 230, 210, 0.65);
   --color-forest-text: #173b19;
 
   /* Operational Accents: Muted Orange/Amber (Action Needed / Medium Priority / Review) */
   --color-amber: #b45309;
   --color-amber-hover: #92400e;
-  --color-amber-bg: #fffbeb;
-  --color-amber-border: #fed7aa;
+  --color-amber-bg: rgba(255, 251, 235, 0.55);
+  --color-amber-border: rgba(254, 215, 170, 0.65);
   --color-amber-text: #853706;
 
   /* Operational Accents: Muted Crimson/Red (Critical / Live Alert / Urgent Case) */
   --color-crimson: #991b1b;
   --color-crimson-hover: #7f1d1d;
-  --color-crimson-bg: #fef2f2;
-  --color-crimson-border: #fecaca;
+  --color-crimson-bg: rgba(254, 242, 242, 0.55);
+  --color-crimson-border: rgba(254, 202, 202, 0.65);
   --color-crimson-text: #7f1d1d;
 
   /* Tactical Charcoal / Dark (Primary buttons, structural headers) */

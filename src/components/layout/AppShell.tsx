@@ -17,7 +17,7 @@ export const AppShell: React.FC = () => {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        backgroundColor: 'var(--bg-app)',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Left Navigation Sidebar */}
@@ -46,7 +46,7 @@ export const AppShell: React.FC = () => {
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
-            backgroundColor: 'var(--bg-app)',
+            backgroundColor: 'transparent',
           }}
         >
           <Outlet />

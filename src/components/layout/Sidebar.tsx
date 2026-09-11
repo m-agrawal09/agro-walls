@@ -3,7 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../../routes/navigationConfig';
 import { Badge } from '../common/Badge';
 import { StatusDot } from '../common/StatusDot';
-import { Shield } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,36 +24,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         userSelect: 'none',
         overflow: 'hidden',
         zIndex: 40,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
       }}
     >
       {/* Brand Header */}
       <div
         style={{
-          padding: isOpen ? 'var(--space-4) var(--space-4)' : 'var(--space-4) var(--space-2)',
+          padding: isOpen ? 'var(--space-3) var(--space-4)' : 'var(--space-3)',
           borderBottom: '1px solid var(--border-base)',
-          backgroundColor: 'var(--bg-surface)',
+          backgroundColor: 'transparent',
           display: 'flex',
           alignItems: 'center',
           gap: 'var(--space-3)',
           minHeight: 'var(--header-height)',
         }}
       >
-        <div
-          style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--color-charcoal-900)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text-inverse)',
-            flexShrink: 0,
-          }}
-        >
-          <Shield size={18} strokeWidth={2.2} />
-        </div>
-
         {isOpen && (
           <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>

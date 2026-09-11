@@ -5,7 +5,6 @@ import {
   ChevronRight, 
   ChevronLeft, 
   RotateCcw, 
-  Play,
   Minimize2, 
   Maximize2 
 } from 'lucide-react';
@@ -93,7 +92,7 @@ export const DEMO_STEPS: DemoStepConfig[] = [
 
 export const DemoPresentationBar: React.FC = () => {
   const navigate = useNavigate();
-  const { demoStep, setDemoStep, caseStatus, duplicatesMerged, resetDemoData } = useCaseContext();
+  const { demoStep, setDemoStep, duplicatesMerged, resetDemoData } = useCaseContext();
   const [minimized, setMinimized] = useState<boolean>(false);
 
   const current = DEMO_STEPS.find((s) => s.step === demoStep) || DEMO_STEPS[0];
@@ -121,16 +120,18 @@ export const DemoPresentationBar: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: 'var(--color-charcoal-900)',
+        backgroundColor: 'rgba(18, 20, 23, 0.65)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         color: 'var(--text-inverse)',
-        borderBottom: '1px solid var(--border-base)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
         padding: minimized ? '6px 16px' : '8px 16px',
         fontSize: '12px',
         fontFamily: 'var(--font-sans)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
         transition: 'padding 0.15s ease',
       }}
     >
@@ -145,25 +146,6 @@ export const DemoPresentationBar: React.FC = () => {
       >
         {/* Left: Indicator & Step Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '2px 7px',
-              borderRadius: 'var(--radius-xs)',
-              backgroundColor: 'var(--color-amber-text)',
-              color: '#ffffff',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-            }}
-          >
-            <Play size={10} fill="#ffffff" />
-            <span>DEMO TOUR [{demoStep}/10]</span>
-          </div>
-
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
             <span style={{ fontWeight: 600, fontSize: '13px', color: '#ffffff' }}>
               {current.title}
@@ -178,39 +160,9 @@ export const DemoPresentationBar: React.FC = () => {
 
         {/* Center/Right: Action hint & status pills */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          {!minimized && (
-            <div
-              style={{
-                fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--color-amber-border)',
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                padding: '3px 8px',
-                borderRadius: 'var(--radius-xs)',
-                border: '1px solid rgba(255,255,255,0.12)',
-              }}
-            >
-              Action: {current.actionHint}
-            </div>
-          )}
-
           {/* Live Status Indicators */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span
-              style={{
-                fontSize: '10px',
-                fontFamily: 'var(--font-mono)',
-                padding: '2px 6px',
-                borderRadius: 'var(--radius-xs)',
-                backgroundColor: caseStatus === 'VERIFIED MATCH' ? 'var(--color-forest)' : 'rgba(255,255,255,0.1)',
-                color: '#ffffff',
-                border: '1px solid rgba(255,255,255,0.15)',
-              }}
-            >
-              {caseStatus === 'VERIFIED MATCH' ? '✓ VERIFIED' : 'STATUS: UNVERIFIED'}
-            </span>
-
-            {duplicatesMerged && (
+          {duplicatesMerged && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span
                 style={{
                   fontSize: '10px',
@@ -223,8 +175,8 @@ export const DemoPresentationBar: React.FC = () => {
               >
                 ✓ DEDUP MERGED
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Stepper Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
