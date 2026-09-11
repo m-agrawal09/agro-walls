@@ -187,6 +187,16 @@ export const Header: React.FC<HeaderProps> = ({
           <span>CAD: LIVE</span>
         </div>
 
+        {/* Public Family Status Portal Link */}
+        <button
+          onClick={() => navigate('/status')}
+          className="btn btn-secondary"
+          style={{ height: '34px', fontSize: '12px' }}
+          title="Open Public Family Status Portal"
+        >
+          <span>Family Portal</span>
+        </button>
+
         {/* Primary Action Button */}
         <button
           onClick={() => navigate('/report/new')}

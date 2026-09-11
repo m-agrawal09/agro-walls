@@ -7,6 +7,7 @@ import { MatchIntelligencePage } from './pages/MatchIntelligencePage';
 import { VerificationQueuePage } from './pages/VerificationQueuePage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { DuplicateResolutionPage } from './pages/DuplicateResolutionPage';
+import { FamilyStatusPage } from './pages/FamilyStatusPage';
 import {
   CommunityReportsPage,
   SourceNetworkPage,
@@ -25,6 +26,9 @@ export const App: React.FC = () => {
           <Route path="overview" element={<OverviewPage />} />
           <Route path="cases" element={<CaseDetailPage />} />
           <Route path="cases/:id" element={<CaseDetailPage />} />
+          <Route path="status" element={<FamilyStatusPage />} />
+          <Route path="status/:id" element={<FamilyStatusPage />} />
+          <Route path="family-status" element={<FamilyStatusPage />} />
           <Route path="report/new" element={<AddReportPage />} />
           <Route path="match-intel" element={<MatchIntelligencePage />} />
           <Route path="verification" element={<VerificationQueuePage />} />
