@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -15,6 +15,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { PublicContributionSection } from '../components/common/PublicContributionSection';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 export type CommunityTab = 'New Submissions' | 'Under Review' | 'Accepted' | 'Rejected' | 'Potential Duplicate';
 
@@ -184,10 +185,44 @@ export const CommunityReportsPage: React.FC = () => {
   const [selectedReportId, setSelectedReportId] = useState<string>('CR-2026-0814');
   const [userRole, setUserRole] = useState<UserRole>('CONTROL ROOM');
   const [actionAlert, setActionAlert] = useState<{ type: string; message: string } | null>(null);
+  const [dbReports, setDbReports] = useState<CommunityReport[] | null>(null);
 
-  const selectedReport = mockCommunityReports.find(r => r.reportId === selectedReportId) || mockCommunityReports[0];
+  useEffect(() => {
+    api.getCommunityReports()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: CommunityReport[] = items.map((r: any) => ({
+            id: r._id || r.reportId,
+            reportId: r.reportId,
+            personDescription: r.personName || r.narrativeDescription || 'Citizen Tip',
+            ageGender: r.age ? `${r.age} yrs · ${r.gender || 'Unknown'}` : 'Unknown',
+            isMinor: Boolean(r.isMinor),
+            location: r.lastKnownLocation || 'Flood Zone',
+            submittedBy: r.fullName || 'Anonymous Reporter',
+            reporterPhone: r.phoneNumber || '+91 94000 00000',
+            reporterAddress: r.address || 'Field Location',
+            source: r.source || 'Citizen Portal',
+            timeAgo: 'Recent',
+            status: r.status || 'NEW',
+            tabCategory: r.tabCategory || 'New Submissions',
+            narrative: r.narrativeDescription || '',
+            clothing: r.clothing || '',
+            photoType: r.photoFileName || 'Mobile Photo',
+            possibleMatchingCase: r.possibleMatchingCase,
+            duplicateWarning: r.duplicateWarning,
+          }));
+          setDbReports(mapped);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully
+      });
+  }, []);
 
-  const filteredReports = mockCommunityReports.filter(r => {
+  const reportsPool = dbReports && dbReports.length > 0 ? dbReports : mockCommunityReports;
+  const selectedReport = reportsPool.find(r => r.reportId === selectedReportId) || reportsPool[0];
+
+  const filteredReports = reportsPool.filter(r => {
     if (activeTab === 'New Submissions') return r.status === 'NEW';
     if (activeTab === 'Under Review') return r.status === 'UNDER REVIEW';
     if (activeTab === 'Accepted') return r.status === 'ACCEPTED';
@@ -221,6 +256,7 @@ export const CommunityReportsPage: React.FC = () => {
         type: 'ACCEPTED',
         message: `SUBMISSION ACCEPTED FOR VERIFICATION: Report ${selectedReport.reportId} routed to Sworn Verification Queue. A dispatcher must verify before final ledger inclusion.`,
       });
+      api.updateCommunityReport(selectedReport.reportId, 'ACCEPTED', 'Accepted').catch(() => {});
     } else if (actionType === 'LINK') {
       setActionAlert({
         type: 'LINKED',
@@ -231,6 +267,7 @@ export const CommunityReportsPage: React.FC = () => {
         type: 'REJECTED',
         message: `REPORT REJECTED: ${selectedReport.reportId} marked as invalid or duplicate. Archived in crowdsource audit stream.`,
       });
+      api.updateCommunityReport(selectedReport.reportId, 'REJECTED', 'Rejected').catch(() => {});
     } else if (actionType === 'REQUEST_INFO') {
       setActionAlert({
         type: 'REQUESTED',

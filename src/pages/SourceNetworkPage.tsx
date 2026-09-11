@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   RefreshCw 
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
+import { api } from '../services/api';
 
 interface IngestConnector {
   id: string;
@@ -22,6 +23,29 @@ interface IngestConnector {
 export const SourceNetworkPage: React.FC = () => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [dbConnectors, setDbConnectors] = useState<IngestConnector[] | null>(null);
+
+  useEffect(() => {
+    api.getSourceFeeds()
+      .then((feeds) => {
+        if (Array.isArray(feeds) && feeds.length > 0) {
+          const mapped: IngestConnector[] = feeds.map((f: any, idx: number) => ({
+            id: `CONN-${f.type?.substring(0, 3)?.toUpperCase() || 'ING'}-0${idx + 1}`,
+            name: f.source,
+            type: (f.type?.includes('Hospital') ? 'HOSPITAL' : f.type?.includes('Relief') || f.type?.includes('Shelter') ? 'SHELTER' : 'FIELD TEAMS') as any,
+            protocol: f.type,
+            status: (f.status === 'LIVE FEED' ? 'ONLINE' : f.status === 'STABLE' ? 'SYNCED' : 'ACTIVE STREAM') as any,
+            latencyMs: 14 + idx * 6,
+            recordsToday: f.reportsReceived || 120,
+            lastSync: f.lastIngest || 'Just now',
+            endpoint: `https://gateway.mp-disaster.gov.in/feed/${f.source.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+            encryption: 'mTLS 1.3 / AES-256 GCM',
+          }));
+          setDbConnectors(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const connectors: IngestConnector[] = [
     {
@@ -303,7 +327,7 @@ export const SourceNetworkPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {connectors.map((conn) => (
+                {(dbConnectors && dbConnectors.length > 0 ? dbConnectors : connectors).map((conn) => (
                   <tr key={conn.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {conn.id}

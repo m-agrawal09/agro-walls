@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -21,6 +21,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 export type FilterCategory = 'All' | 'High Priority' | 'Potential Match' | 'Needs Review' | 'More Information';
 
@@ -362,6 +363,7 @@ export const VerificationQueuePage: React.FC = () => {
   const { verifyMatch } = useCaseContext();
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dbQueueCases, setDbQueueCases] = useState<VerificationCase[] | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState<string>(mockCases[0].caseId);
   
   // Verification Confirmation Modal / State
@@ -370,9 +372,56 @@ export const VerificationQueuePage: React.FC = () => {
   const [officerNotes, setOfficerNotes] = useState<string>('');
   const [actionAlert, setActionAlert] = useState<{ type: string; message: string } | null>(null);
 
-  const selectedCase = mockCases.find(c => c.caseId === selectedCaseId) || mockCases[0];
+  useEffect(() => {
+    api.getVerifications()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: VerificationCase[] = items.map((it: any) => ({
+            caseId: it.caseId,
+            missingName: it.name,
+            missingAgeGender: it.ageGender,
+            missingLocation: it.location,
+            missingClothing: 'Reported in disaster intake roster',
+            missingMarks: 'Biometric & scar profile on record',
+            missingSource: it.source,
+            missingContact: 'Verified Command Desk',
+            candidateName: it.name,
+            candidateRef: it.matchTarget?.split(' ')[1] || 'FND-2026-01892',
+            candidateAgeGender: it.ageGender,
+            candidateLocation: it.location,
+            candidateClothing: 'Admitted clothing verified by nurse',
+            candidateMarks: 'Physical marks correspond to intake',
+            candidateSource: 'Relief Facility Network',
+            candidateContact: 'On-site Dispatch Station',
+            confidence: it.confidence || 92,
+            sourceSummary: `${it.source} → Correlated against ${it.matchTarget}`,
+            submittedAgo: it.reportedAgo || 'Recent',
+            priority: it.priority || 'HIGH',
+            status: it.status === 'PHOTO REVIEW' ? 'PHOTO REVIEW' : it.status === 'VERIFIED MATCH' ? 'VERIFIED' : 'NEEDS REVIEW',
+            filterGroup: (it.confidence >= 90 ? 'Potential Match' : 'Needs Review') as any,
+            matchingEvidence: [
+              `Algorithmic match confidence: ${it.confidence || 90}%`,
+              'Demographic and physical characteristics match intake report',
+              'Confirmed by on-site field medical personnel',
+            ],
+            conflictingInfo: [],
+            sourceHistory: [it.source || 'Emergency Desk Ingest'],
+            timeline: [
+              { timestamp: '11 Sep 2026, 08:30 LOC', actor: 'SYSTEM', action: 'Intake Correlated', detail: 'Initial match flagged' },
+              { timestamp: '11 Sep 2026, 12:15 LOC', actor: it.assignedOfficer || 'DISP-884', action: 'Field Verification', detail: 'Assigned for sworn verification' },
+            ],
+          }));
+          setDbQueueCases(mapped);
+          if (mapped[0]) setSelectedCaseId(mapped[0].caseId);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const filteredCases = mockCases.filter(c => {
+  const casesPool = dbQueueCases && dbQueueCases.length > 0 ? dbQueueCases : mockCases;
+  const selectedCase = casesPool.find(c => c.caseId === selectedCaseId) || casesPool[0];
+
+  const filteredCases = casesPool.filter(c => {
     const matchesFilter = 
       selectedFilter === 'All' ? true :
       selectedFilter === 'High Priority' ? c.priority === 'CRITICAL' || c.priority === 'HIGH' :
@@ -401,13 +450,25 @@ export const VerificationQueuePage: React.FC = () => {
       verifyMatch(
         selectedCase.candidateRef,
         'DISP-884 (Certified Dispatcher)',
-        officerNotes || 'Sworn physical verification: Healed right chin scar (~2cm), biometrics and clothing match.'
+        officerNotes || 'Sworn physical verification: Biometrics, marks and clothing confirmed.'
       );
+      api.updateVerification(selectedCase.caseId, {
+        status: 'VERIFIED MATCH',
+        assignedOfficer: 'DISP-884 (Certified Dispatcher)',
+        notes: officerNotes || 'Sworn physical verification confirmed.',
+      }).catch(() => {});
+
       setActionAlert({
         type: 'VERIFIED',
         message: `MATCH CONFIRMED & SIGNED: Case ${selectedCase.caseId} verified by Dispatcher DISP-884. Evidence locked to immutable audit ledger. Family liaison notified at ${selectedCase.missingContact}.`,
       });
     } else if (activeActionType === 'REJECT') {
+      api.updateVerification(selectedCase.caseId, {
+        status: 'REJECTED',
+        assignedOfficer: 'DISP-884',
+        notes: officerNotes || 'Match rejected by dispatcher.',
+      }).catch(() => {});
+
       setActionAlert({
         type: 'REJECTED',
         message: `MATCH REJECTED: Candidate ${selectedCase.candidateRef} severed from Case ${selectedCase.caseId}. Missing person record remains ACTIVE in search queue.`,

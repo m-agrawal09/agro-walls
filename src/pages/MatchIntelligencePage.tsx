@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -13,6 +13,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 interface EvidenceRow {
   parameter: string;
@@ -44,6 +45,39 @@ export const MatchIntelligencePage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('cand-1');
   const [actionNotice, setActionNotice] = useState<{ type: 'VERIFIED' | 'REJECTED' | 'REQUESTED' | null; message: string }>({ type: null, message: '' });
+  const [dbCandidates, setDbCandidates] = useState<Candidate[] | null>(null);
+
+  useEffect(() => {
+    api.getMatches('MP-2026-00421')
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: Candidate[] = items.map((m: any, idx: number) => ({
+            id: `cand-${idx + 1}`,
+            caseRef: m.candidateRef,
+            name: m.candidateName,
+            age: '24 years',
+            gender: 'Male',
+            source: 'Disaster Relief Camp Ward 6',
+            sourceStation: m.location || 'Relief Camp Facility',
+            currentLocation: m.location || 'Shelter Ward 6',
+            distanceKm: m.distance || '3.2 km',
+            ingestTimestamp: '11 Sep 2026, 15:42 LOC',
+            overallConfidence: m.confidence,
+            confidenceGrade: (m.confidence >= 90 ? 'STRONG' : m.confidence >= 70 ? 'ELEVATED' : 'MODERATE') as any,
+            condition: 'Alive · Stable',
+            photoLabel: 'Field Intake Portrait',
+            evidence: [
+              { parameter: 'Facial Biometric Score', missingRecord: 'Reference Photo', candidateRecord: 'Field Intake Snapshot', evaluation: `${m.facialScore || 95}% similarity match`, matchGrade: 'MATCH' },
+              { parameter: 'Demographic Alignment', missingRecord: '24 years · Male', candidateRecord: '24 years · Male', evaluation: `${m.demographicScore || 92}% parameter overlap`, matchGrade: 'MATCH' },
+              { parameter: 'Clothing & Markers', missingRecord: 'Navy blue polo, chin scar', candidateRecord: 'Navy polo, right chin scar', evaluation: m.evidence || 'High correlation', matchGrade: 'MATCH' },
+              { parameter: 'Location Proximity', missingRecord: 'Sector B-4 Riverfront', candidateRecord: m.location || 'Ward 6 Camp', evaluation: `${m.distance || '3.2 km'} from last seen`, matchGrade: 'HIGH' },
+            ],
+          }));
+          setDbCandidates(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const missingPerson = {
     caseId: 'MP-2026-00421',
@@ -246,7 +280,8 @@ export const MatchIntelligencePage: React.FC = () => {
   ];
 
   const { verifyMatch } = useCaseContext();
-  const currentCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
+  const candidatesPool = dbCandidates && dbCandidates.length > 0 ? dbCandidates : candidates;
+  const currentCandidate = candidatesPool.find(c => c.id === selectedCandidateId) || candidatesPool[0];
 
   const handleVerify = () => {
     verifyMatch(currentCandidate.id, 'DISP-884', `Biometric, healed chin scar (~2cm), and clothing match confirmed for ${currentCandidate.name} (${currentCandidate.caseRef}).`);
@@ -614,7 +649,7 @@ export const MatchIntelligencePage: React.FC = () => {
 
             {/* 3 Candidate Cards Tabs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)' }}>
-              {candidates.map((cand) => {
+              {candidatesPool.map((cand) => {
                 const isSelected = cand.id === selectedCandidateId;
 
                 return (

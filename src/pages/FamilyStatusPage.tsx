@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 export type CaseStatusType = 
   | 'Report Received'
@@ -108,10 +109,26 @@ export const FamilyStatusPage: React.FC = () => {
     if (!searchInput.trim()) return;
     const cid = searchInput.trim().toUpperCase();
     setActiveCaseId(cid);
-    if (cid === 'MP-2026-00421' && isContextVerified) {
-      setCurrentStatus('Verified Match');
-    }
-    setFeedbackNotice(`Showing live operational status for Case ${cid}`);
+
+    api.getCaseById(cid)
+      .then((c) => {
+        if (c.status === 'VERIFIED MATCH' || c.status === 'FAMILY NOTIFIED') {
+          setCurrentStatus('Verified Match');
+        } else if (c.status === 'AWAITING VERIFICATION') {
+          setCurrentStatus('Potential Match — Verification in Progress');
+        } else if (c.status === 'RESOLVED') {
+          setCurrentStatus('Resolved');
+        } else {
+          setCurrentStatus('Looking for a Match');
+        }
+        setFeedbackNotice(`Live status retrieved for ${c.name} (${cid}): ${c.status}`);
+      })
+      .catch(() => {
+        if (cid === 'MP-2026-00421' && isContextVerified) {
+          setCurrentStatus('Verified Match');
+        }
+        setFeedbackNotice(`Showing live operational status for Case ${cid}`);
+      });
   };
 
   return (

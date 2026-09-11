@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -11,6 +11,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 interface VerificationItem {
   caseId: string;
@@ -49,178 +50,99 @@ interface SourceStat {
 
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
-  const { caseStatus, priority: contextPriority } = useCaseContext();
+  const { caseStatus } = useCaseContext();
   const [selectedDisaster, setSelectedDisaster] = useState('Central India Flood Response');
   const [disasterFilterOpen, setDisasterFilterOpen] = useState(false);
 
+  const [kpiData, setKpiData] = useState<{
+    totalCases: number;
+    verifiedCases: number;
+    awaitingVerification: number;
+    lookingForMatch: number;
+    pendingVerificationQueue: number;
+    matchRate: number;
+  }>({
+    totalCases: 12,
+    verifiedCases: 3,
+    awaitingVerification: 4,
+    lookingForMatch: 5,
+    pendingVerificationQueue: 6,
+    matchRate: 74,
+  });
+
+  const [verificationQueue, setVerificationQueue] = useState<VerificationItem[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [sourceStats, setSourceStats] = useState<SourceStat[]>([]);
+
+  useEffect(() => {
+    // 1. Fetch live KPIs
+    api.getKPIs()
+      .then((kpis) => {
+        if (kpis) setKpiData(kpis);
+      })
+      .catch(() => {});
+
+    // 2. Fetch live Verification Queue
+    api.getVerifications()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setVerificationQueue(items.map((it: any) => ({
+            caseId: it.caseId,
+            name: it.name,
+            ageGender: it.ageGender || 'Age Unknown',
+            location: it.location || 'Relief Camp',
+            source: it.source || 'Intake Terminal',
+            matchTarget: it.matchTarget || 'Correlation Match',
+            confidence: it.confidence || 90,
+            priority: it.priority || 'HIGH',
+            status: it.status || 'PHOTO REVIEW',
+            reportedAgo: it.reportedAgo || 'Recent',
+          })));
+        }
+      })
+      .catch(() => {});
+
+    // 3. Fetch live Audit Activity
+    api.getAuditLogs(15)
+      .then((logs) => {
+        if (Array.isArray(logs) && logs.length > 0) {
+          setRecentActivity(logs.map((log: any) => ({
+            id: log._id ? `ACT-${log._id.slice(-4)}` : `ACT-${Math.floor(Math.random() * 900 + 100)}`,
+            timestamp: log.timestamp ? log.timestamp.slice(11, 19) + ' UTC' : 'Just now',
+            source: log.source || 'System Feed',
+            sourceType: (log.sourceType || 'RELIEF CAMP') as any,
+            action: log.details || log.action,
+            person: log.person || 'General Incident',
+            caseId: log.caseId || 'CAD-OPS',
+            operator: log.operator || 'DISP-SYSTEM',
+            status: (log.status || 'INTAKE') as any,
+          })));
+        }
+      })
+      .catch(() => {});
+
+    // 4. Fetch live Ingest Feeds
+    api.getSourceFeeds()
+      .then((feeds) => {
+        if (Array.isArray(feeds) && feeds.length > 0) {
+          setSourceStats(feeds.map((f: any) => ({
+            source: f.source,
+            type: f.type,
+            reportsReceived: f.reportsReceived,
+            verified: f.verified,
+            pending: f.pending,
+            lastIngest: f.lastIngest || 'Live',
+            status: f.status || 'LIVE FEED',
+          })));
+        }
+      })
+      .catch(() => {});
+  }, [caseStatus]);
+
   const disastersList = [
-    { name: 'Central India Flood Response', region: 'Madhya Pradesh / Narmada Basin', status: 'LEVEL 3 CRITICAL', cases: 1284 },
+    { name: 'Central India Flood Response', region: 'Madhya Pradesh / Narmada Basin', status: 'LEVEL 3 CRITICAL', cases: kpiData.totalCases },
     { name: 'Assam Brahmaputra Surge 2026', region: 'Dhubri / Barpeta Sector', status: 'LEVEL 2 ELEVATED', cases: 412 },
     { name: 'Coastal Cyclone Sagar Monitoring', region: 'Odisha Coastal Belt', status: 'STANDBY WATCH', cases: 58 },
-  ];
-
-  const verificationQueue: VerificationItem[] = [
-    {
-      caseId: 'MP-2026-00421',
-      name: 'Rahul Agrawal',
-      ageGender: '24 M',
-      location: 'Relief Zone B (Sector 4 Riverfront)',
-      source: 'State Helpline 1070 (Brother: Sumeet)',
-      matchTarget: 'Candidate: Rahul Agarwal (Ward 6 Camp)',
-      confidence: 94,
-      priority: contextPriority === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-      status: caseStatus === 'VERIFIED MATCH' ? 'VERIFIED MATCH' : 'PHOTO REVIEW',
-      reportedAgo: '9h ago',
-    },
-    {
-      caseId: 'RC-CIF-0941',
-      name: 'Ramesh Chandra Verma',
-      ageGender: '58 M',
-      location: 'Hoshangabad Ghat Sector 4',
-      source: 'District Civil Hospital Ward 3',
-      matchTarget: 'Report #CIF-8812 (Filed by son)',
-      confidence: 96,
-      priority: 'CRITICAL',
-      status: 'PHOTO REVIEW',
-      reportedAgo: '12m ago',
-    },
-    {
-      caseId: 'RC-CIF-0938',
-      name: 'Sunita Devi Ahirwar',
-      ageGender: '34 F',
-      location: 'Vidisha Relief Camp #2',
-      source: 'Red Cross Field Team B',
-      matchTarget: 'Helpline Tip #1070-492',
-      confidence: 91,
-      priority: 'HIGH',
-      status: 'PENDING FIELD CHECK',
-      reportedAgo: '24m ago',
-    },
-    {
-      caseId: 'RC-CIF-0935',
-      name: 'Aarav Sharma',
-      ageGender: '8 M',
-      location: 'Sehore Govt High School Shelter',
-      source: 'Childline 1098 Ingest',
-      matchTarget: 'Intake #CIF-8760 (Unaccompanied)',
-      confidence: 94,
-      priority: 'CRITICAL',
-      status: 'PHOTO REVIEW',
-      reportedAgo: '38m ago',
-    },
-    {
-      caseId: 'RC-CIF-0929',
-      name: 'Mohammad Farooq Siddiqui',
-      ageGender: '62 M',
-      location: 'Narmada Valley Rescue Sector 9',
-      source: 'NDRF 11 Bn Field Log',
-      matchTarget: 'Report #CIF-8902 (Diabetic alert)',
-      confidence: 88,
-      priority: 'HIGH',
-      status: 'BIOMETRIC CORRELATED',
-      reportedAgo: '52m ago',
-    },
-    {
-      caseId: 'RC-CIF-0922',
-      name: 'Lakshmi Bai Lodhi',
-      ageGender: '46 F',
-      location: 'Bhopal Central Intake Tents',
-      source: 'Citizen Web Portal Tip',
-      matchTarget: 'Intake #CIF-8651 (Hospital list)',
-      confidence: 84,
-      priority: 'MEDIUM',
-      status: 'PENDING FIELD CHECK',
-      reportedAgo: '1h 14m ago',
-    },
-  ];
-
-  const recentActivity: ActivityItem[] = [
-    ...(caseStatus === 'VERIFIED MATCH' ? [{
-      id: 'ACT-492',
-      timestamp: '15:48:22 LOC',
-      source: 'Relief Camp Ward 6',
-      sourceType: 'RELIEF CAMP' as const,
-      action: 'Sworn match verified for Rahul Agrawal with Candidate Rahul Agarwal (Ward 6)',
-      person: 'Rahul Agrawal (24 M)',
-      caseId: 'MP-2026-00421',
-      operator: 'DISP-884',
-      status: 'VERIFIED' as const,
-    }] : []),
-    {
-      id: 'ACT-491',
-      timestamp: '17:16:04 LOC',
-      source: 'State Helpline 1070',
-      sourceType: 'HELPLINE',
-      action: 'Direct sighting reported near Budhni railway bridge',
-      person: 'Ganesh Ram Yadav (42 M)',
-      caseId: 'RC-CIF-0899',
-      operator: 'DISP-412',
-      status: 'INTAKE',
-    },
-    {
-      id: 'ACT-490',
-      timestamp: '17:12:30 LOC',
-      source: 'AIIMS Field Hospital',
-      sourceType: 'HOSPITAL',
-      action: 'Admitted unconscious patient matched with missing notice',
-      person: 'Pooja Tiwari (27 F)',
-      caseId: 'RC-CIF-0914',
-      operator: 'DISP-884',
-      status: 'MATCH',
-    },
-    {
-      id: 'ACT-489',
-      timestamp: '17:05:18 LOC',
-      source: 'Relief Camp Sector 3',
-      sourceType: 'RELIEF CAMP',
-      action: 'Family liaison completed physical verification & reunion confirmed',
-      person: 'Anand Kumar Mishra (14 M)',
-      caseId: 'RC-CIF-0782',
-      operator: 'DISP-204',
-      status: 'VERIFIED',
-    },
-    {
-      id: 'ACT-488',
-      timestamp: '16:58:42 LOC',
-      source: 'SEEDS India Volunteer Cell',
-      sourceType: 'NGO',
-      action: 'Shelter intake roster synchronized (48 evacuees logged)',
-      person: 'Batch Ingest Sector B',
-      caseId: 'BATCH-042',
-      operator: 'SYS-AUTO',
-      status: 'INTAKE',
-    },
-    {
-      id: 'ACT-487',
-      timestamp: '16:49:11 LOC',
-      source: 'NDRF Boat Unit 4',
-      sourceType: 'VOLUNTEER',
-      action: 'Critical medical flag: Displaced elder rescued without insulin',
-      person: 'Deendayal Upadhyay (71 M)',
-      caseId: 'RC-CIF-0943',
-      operator: 'DISP-884',
-      status: 'ALERT',
-    },
-    {
-      id: 'ACT-486',
-      timestamp: '16:37:55 LOC',
-      source: 'Public Web Portal',
-      sourceType: 'PUBLIC',
-      action: 'New missing child report filed with photo and last GPS tag',
-      person: 'Meera Patel (6 F)',
-      caseId: 'RC-CIF-0945',
-      operator: 'DISP-309',
-      status: 'INTAKE',
-    },
-  ];
-
-  const sourceStats: SourceStat[] = [
-    { source: 'Emergency Helplines (1070 / 112)', type: 'Voice Call Center', reportsReceived: 512, verified: 340, pending: 18, lastIngest: '2m ago', status: 'LIVE FEED' },
-    { source: 'District & Military Field Hospitals', type: 'Clinical Ingest API', reportsReceived: 294, verified: 268, pending: 4, lastIngest: '4m ago', status: 'LIVE FEED' },
-    { source: 'Disaster Relief Camps & Shelters', type: 'On-site Camp Roster', reportsReceived: 648, verified: 512, pending: 22, lastIngest: '1m ago', status: 'LIVE FEED' },
-    { source: 'Accredited NGOs (Red Cross, SEEDS)', type: 'Verified Partner Feed', reportsReceived: 286, verified: 218, pending: 11, lastIngest: '9m ago', status: 'STABLE' },
-    { source: 'Field Volunteers & Ham Radio', type: 'Triage Submission App', reportsReceived: 174, verified: 98, pending: 27, lastIngest: '14m ago', status: 'STABLE' },
-    { source: 'Public Portal & WhatsApp Tip Line', type: 'Citizen Submissions', reportsReceived: 428, verified: 210, pending: 64, lastIngest: '30s ago', status: 'LIVE FEED' },
   ];
 
   return (
@@ -417,7 +339,7 @@ export const OverviewPage: React.FC = () => {
                 </Badge>
               </div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
-                1,284
+                {kpiData.totalCases}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 Total open missing person records
@@ -431,11 +353,11 @@ export const OverviewPage: React.FC = () => {
                   FOUND / RESCUED
                 </span>
                 <Badge variant="forest">
-                  +38 PAST 24H
+                  LIVE REUNIONS
                 </Badge>
               </div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-forest)', letterSpacing: '-0.03em' }}>
-                472
+                {kpiData.verifiedCases}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 Reunited or safely registered at shelters
@@ -453,7 +375,7 @@ export const OverviewPage: React.FC = () => {
                 </Badge>
               </div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-amber)', letterSpacing: '-0.03em' }}>
-                86
+                {kpiData.pendingVerificationQueue}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 Algorithmic correlations pending check
@@ -471,7 +393,7 @@ export const OverviewPage: React.FC = () => {
                 </Badge>
               </div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
-                31
+                {kpiData.awaitingVerification}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 Assigned to field operators & liaison officers
@@ -489,7 +411,7 @@ export const OverviewPage: React.FC = () => {
                 </Badge>
               </div>
               <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-crimson)', letterSpacing: '-0.03em' }}>
-                18
+                {kpiData.lookingForMatch}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 Unaccompanied minors, critical medical need
