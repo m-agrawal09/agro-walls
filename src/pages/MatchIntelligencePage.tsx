@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
 import { api } from '../services/api';
 
@@ -43,12 +43,15 @@ interface Candidate {
 
 export const MatchIntelligencePage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const caseId = id || 'MP-2026-00421';
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('cand-1');
   const [actionNotice, setActionNotice] = useState<{ type: 'VERIFIED' | 'REJECTED' | 'REQUESTED' | null; message: string }>({ type: null, message: '' });
   const [dbCandidates, setDbCandidates] = useState<Candidate[] | null>(null);
+  const [liveMissingPerson, setLiveMissingPerson] = useState<any>(null);
 
   useEffect(() => {
-    api.getMatches('MP-2026-00421')
+    api.getMatches(caseId)
       .then((items) => {
         if (Array.isArray(items) && items.length > 0) {
           const mapped: Candidate[] = items.map((m: any, idx: number) => ({
@@ -77,23 +80,30 @@ export const MatchIntelligencePage: React.FC = () => {
         }
       })
       .catch(() => {});
-  }, []);
+
+    api.getCaseById(caseId)
+      .then((c) => {
+        if (c) setLiveMissingPerson(c);
+      })
+      .catch(() => {});
+  }, [caseId]);
 
   const missingPerson = {
-    caseId: 'MP-2026-00421',
-    name: 'Rahul Agrawal',
-    age: '24 years',
-    gender: 'Male',
-    lastKnownLocation: 'Relief Zone B (Sector 4 Narmada Bank)',
-    coordinates: '22.7533° N, 77.7289° E',
-    clothing: 'Navy blue collared t-shirt, beige cargo pants, black digital watch, dark sandals',
-    physicalMarks: 'Scar on right chin (~2cm from childhood fall), small mole below left eye',
+    caseId: liveMissingPerson?.caseId || caseId,
+    name: liveMissingPerson?.name || 'Rahul Agrawal',
+    age: liveMissingPerson?.age ? `${liveMissingPerson.age} years` : '24 years',
+    gender: liveMissingPerson?.gender === 'M' ? 'Male' : liveMissingPerson?.gender === 'F' ? 'Female' : 'Male',
+    lastKnownLocation: liveMissingPerson?.lastSeenLocation || 'Relief Zone B (Sector 4 Narmada Bank)',
+    coordinates: liveMissingPerson?.coordinates || '22.7533° N, 77.7289° E',
+    clothing: liveMissingPerson?.clothing || 'Navy blue collared t-shirt, beige cargo pants, black digital watch, dark sandals',
+    physicalMarks: liveMissingPerson?.keyMarks || 'Scar on right chin (~2cm from childhood fall), small mole below left eye',
     otherTraits: 'Speaks Hindi and fluent English; carrying water bottle, no wallet found',
-    source: 'State Disaster Helpline 1070',
-    reportedBy: 'Sumeet Agrawal (Elder Brother) — +91 98261 44102',
-    reportTimestamp: '11 Sep 2026, 09:15 LOC (8h 51m ago)',
-    incidentZone: 'Central India Flood Response — Sector B-4',
+    source: liveMissingPerson?.source || 'State Disaster Helpline 1070',
+    reportedBy: liveMissingPerson?.reporterContact || 'Sumeet Agrawal (Elder Brother) — +91 98261 44102',
+    reportTimestamp: liveMissingPerson?.reportedAgo ? `${liveMissingPerson.reportedAgo} ago` : '11 Sep 2026, 09:15 LOC (8h 51m ago)',
+    incidentZone: liveMissingPerson?.sector ? `Central India Flood Response — ${liveMissingPerson.sector}` : 'Central India Flood Response — Sector B-4',
     photoLabel: 'Reference Photo (Uploaded via Aadhaar Digilocker)',
+    photoUrl: liveMissingPerson?.photoUrl,
   };
 
   const candidates: Candidate[] = [
@@ -502,29 +512,56 @@ export const MatchIntelligencePage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                padding: 'var(--space-2)',
+                padding: missingPerson.photoUrl ? '0' : 'var(--space-2)',
                 flexShrink: 0,
+                overflow: 'hidden',
                 position: 'relative',
               }}>
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--border-strong)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-inverse)',
-                  marginBottom: '4px',
-                }}>
-                  <User size={24} />
-                </div>
-                <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', lineHeight: 1.1 }}>
-                  REF PHOTO
-                </span>
-                <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--color-forest-text)' }}>
-                  AADHAAR ID
-                </span>
+                {missingPerson.photoUrl ? (
+                  <>
+                    <img 
+                      src={missingPerson.photoUrl} 
+                      alt={missingPerson.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      padding: '2px 4px',
+                      fontSize: '8px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--color-forest-text)',
+                      textAlign: 'center'
+                    }}>
+                      LIVE PHOTO
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--border-strong)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--text-inverse)',
+                      marginBottom: '4px',
+                    }}>
+                      <User size={24} />
+                    </div>
+                    <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', lineHeight: 1.1 }}>
+                      REF PHOTO
+                    </span>
+                    <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--color-forest-text)' }}>
+                      AADHAAR ID
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Core Demographics */}
