@@ -19,12 +19,15 @@ import {
   Shield,
   X,
   AlertTriangle,
-  LucideIcon
+  LucideIcon,
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { NlpReportChatbot } from '../components/chat/NlpReportChatbot';
 
 type ReportType = 
   | 'Missing Person' 
@@ -113,6 +116,7 @@ export const AddReportPage: React.FC = () => {
   const [submissionComplete, setSubmissionComplete] = useState<boolean>(false);
   const [generatedCaseId, setGeneratedCaseId] = useState<string>('');
   const [searchState, setSearchState] = useState<'IDLE' | 'SEARCHING' | 'FOUND'>('IDLE');
+  const [intakeMode, setIntakeMode] = useState<'AI_CHAT' | 'MANUAL_FORM'>('AI_CHAT');
 
   const steps = [
     { num: 1, title: 'Report Type', desc: 'Classification & triage urgency' },
@@ -278,6 +282,71 @@ export const AddReportPage: React.FC = () => {
               <span>View Live Cases Board</span>
             </button>
           </div>
+        </div>
+
+        {/* INTAKE MODE SELECTOR TABS */}
+        <div style={{
+          display: 'flex',
+          gap: '0.75rem',
+          marginTop: '1.25rem',
+          paddingTop: '0.75rem',
+          borderTop: '1px solid var(--border-base)',
+          flexWrap: 'wrap'
+        }}>
+          <button
+            type="button"
+            onClick={() => setIntakeMode('AI_CHAT')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.55rem 1rem',
+              borderRadius: '8px',
+              border: intakeMode === 'AI_CHAT' ? '1px solid var(--primary-color)' : '1px solid var(--border-base)',
+              background: intakeMode === 'AI_CHAT' ? 'rgba(2, 132, 199, 0.08)' : 'var(--bg-app)',
+              color: intakeMode === 'AI_CHAT' ? 'var(--primary-color)' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              boxShadow: intakeMode === 'AI_CHAT' ? '0 1px 4px rgba(2, 132, 199, 0.15)' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Sparkles size={15} />
+            <span>AI Voice & Text Assistant (हिन्दी / English)</span>
+            <span style={{
+              fontSize: '0.65rem',
+              background: '#16a34a',
+              color: '#ffffff',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              fontWeight: 700
+            }}>
+              NLP POWERED
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIntakeMode('MANUAL_FORM')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.55rem 1rem',
+              borderRadius: '8px',
+              border: intakeMode === 'MANUAL_FORM' ? '1px solid var(--primary-color)' : '1px solid var(--border-base)',
+              background: intakeMode === 'MANUAL_FORM' ? 'rgba(2, 132, 199, 0.08)' : 'var(--bg-app)',
+              color: intakeMode === 'MANUAL_FORM' ? 'var(--primary-color)' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <FileText size={15} />
+            <span>Standard 4-Step Form</span>
+          </button>
         </div>
       </div>
 
@@ -525,6 +594,14 @@ export const AddReportPage: React.FC = () => {
               </div>
             </div>
           </div>
+        ) : intakeMode === 'AI_CHAT' ? (
+          <NlpReportChatbot
+            onReportCreated={(caseId) => {
+              setGeneratedCaseId(caseId);
+              setSubmissionComplete(true);
+            }}
+            onSwitchToManual={() => setIntakeMode('MANUAL_FORM')}
+          />
         ) : (
           /* MULTI-STEP INTAKE FORM */
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>

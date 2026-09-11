@@ -222,5 +222,31 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch network graph');
     return res.json();
   },
+
+  // Bilingual NLP Chatbot Intake (English & Hindi)
+  async chatIntake(payload: {
+    message: string;
+    history?: { role: string; text: string }[];
+    currentFields?: any;
+    language?: string;
+  }) {
+    const res = await fetch(`${API_BASE}/chat/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to process chat intake');
+    return res.json();
+  },
+
+  async submitChatReport(payload: { extracted: any; language?: string }) {
+    const res = await fetch(`${API_BASE}/chat/submit-report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to file report from chatbot');
+    return res.json();
+  },
 };
 

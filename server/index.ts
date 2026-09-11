@@ -12,6 +12,7 @@ import statsRoutes from './routes/statsRoutes';
 import healthRoutes from './routes/healthRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import networkRoutes from './routes/networkRoutes';
+import chatbotRoutes from './routes/chatbotRoutes';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/verifications', verificationRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/network-graph', networkRoutes);
+app.use('/api/chat', chatbotRoutes);
 
 // Root test endpoint
 app.get('/api', (_req, res) => {
