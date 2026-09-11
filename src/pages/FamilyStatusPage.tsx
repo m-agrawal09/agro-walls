@@ -78,6 +78,7 @@ export const FamilyStatusPage: React.FC = () => {
   const initialCaseId = id || 'MP-2026-00421';
   const [searchInput, setSearchInput] = useState<string>(initialCaseId);
   const [activeCaseId, setActiveCaseId] = useState<string>(initialCaseId);
+  const [matchedCase, setMatchedCase] = useState<any>(null);
 
   const isContextVerified = caseStatus === 'VERIFIED MATCH' || caseStatus === 'FAMILY NOTIFIED';
   const [currentStatus, setCurrentStatus] = useState<CaseStatusType>(
@@ -86,12 +87,28 @@ export const FamilyStatusPage: React.FC = () => {
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeCaseId === 'MP-2026-00421') {
-      if (isContextVerified) {
-        setCurrentStatus('Verified Match');
-      }
+    const target = id || activeCaseId;
+    if (target) {
+      api.getCaseById(target)
+        .then((c) => {
+          setMatchedCase(c);
+          if (c.status === 'VERIFIED MATCH' || c.status === 'FAMILY NOTIFIED') {
+            setCurrentStatus('Verified Match');
+          } else if (c.status === 'AWAITING VERIFICATION') {
+            setCurrentStatus('Potential Match — Verification in Progress');
+          } else if (c.status === 'RESOLVED') {
+            setCurrentStatus('Resolved');
+          } else {
+            setCurrentStatus('Looking for a Match');
+          }
+        })
+        .catch(() => {
+          if (target === 'MP-2026-00421' && isContextVerified) {
+            setCurrentStatus('Verified Match');
+          }
+        });
     }
-  }, [caseStatus, activeCaseId, isContextVerified]);
+  }, [id, activeCaseId, caseStatus, isContextVerified]);
 
   const profile = statusProfiles[currentStatus];
 
@@ -112,6 +129,7 @@ export const FamilyStatusPage: React.FC = () => {
 
     api.getCaseById(cid)
       .then((c) => {
+        setMatchedCase(c);
         if (c.status === 'VERIFIED MATCH' || c.status === 'FAMILY NOTIFIED') {
           setCurrentStatus('Verified Match');
         } else if (c.status === 'AWAITING VERIFICATION') {
@@ -341,10 +359,10 @@ export const FamilyStatusPage: React.FC = () => {
                 letterSpacing: '-0.02em',
                 marginTop: '2px',
               }}>
-                RAHUL AGRAWAL
+                {matchedCase?.name ? matchedCase.name.toUpperCase() : (activeCaseId === 'MP-2026-00421' ? 'RAHUL AGRAWAL' : activeCaseId)}
               </h2>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                Reported by Sumeet Agrawal · Incident: Central India Flood Response
+                {matchedCase?.reporterContact ? `Reported by ${matchedCase.reporterContact} · ` : (activeCaseId === 'MP-2026-00421' ? 'Reported by Sumeet Agrawal · ' : '')}Incident: Central India Flood Response
               </div>
             </div>
 
