@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   GitMerge, 
   CheckCircle2, 
@@ -13,6 +13,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 interface DuplicateReport {
   id: string;
@@ -50,20 +51,29 @@ export const DuplicateResolutionPage: React.FC = () => {
       : null
   );
   const [operatorNotes, setOperatorNotes] = useState<string>('');
+  const [liveCanonicalCase, setLiveCanonicalCase] = useState<any>(null);
+
+  useEffect(() => {
+    api.getCaseById(canonicalId)
+      .then((c) => {
+        if (c) setLiveCanonicalCase(c);
+      })
+      .catch(() => {});
+  }, [canonicalId]);
 
   const reports: DuplicateReport[] = [
     {
       id: 'rep-1',
-      caseId: 'MP-2026-00421',
-      name: 'Rahul Agrawal',
-      ageGender: '24 years · Male',
+      caseId: canonicalId,
+      name: liveCanonicalCase?.name || 'Rahul Agrawal',
+      ageGender: liveCanonicalCase?.age ? `${liveCanonicalCase.age} years · ${liveCanonicalCase.gender === 'M' ? 'Male' : 'Female'}` : '24 years · Male',
       photoType: 'Gov ID Photo (Aadhaar)',
-      location: 'Relief Zone B (Sector 4 Narmada Riverfront)',
-      clothing: 'Navy blue collared polo shirt, beige cargo pants, dark sandals',
-      marks: 'Healed scar on right chin (~2cm), small mole below left eye',
-      source: 'State Disaster Helpline 1070',
-      timestamp: '11 Sep, 09:15 LOC',
-      contact: 'Sumeet Agrawal (Elder Brother) — +91 98261 44102',
+      location: liveCanonicalCase?.lastSeenLocation || 'Relief Zone B (Sector 4 Narmada Riverfront)',
+      clothing: liveCanonicalCase?.clothing || 'Navy blue collared polo shirt, beige cargo pants, dark sandals',
+      marks: liveCanonicalCase?.keyMarks || 'Healed scar on right chin (~2cm), small mole below left eye',
+      source: liveCanonicalCase?.source || 'State Disaster Helpline 1070',
+      timestamp: liveCanonicalCase?.reportedAgo ? `${liveCanonicalCase.reportedAgo} ago` : '11 Sep, 09:15 LOC',
+      contact: liveCanonicalCase?.reporterContact || 'Sumeet Agrawal (Elder Brother) — +91 98261 44102',
       isRecommendedCanonical: true,
     },
     {
