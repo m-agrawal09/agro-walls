@@ -322,7 +322,7 @@ export const MatchIntelligencePage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-4) var(--space-8)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -379,7 +379,7 @@ export const MatchIntelligencePage: React.FC = () => {
         style={{
           backgroundColor: 'var(--color-amber-bg)',
           borderBottom: '1px solid var(--color-amber-border)',
-          padding: 'var(--space-3) var(--space-8)',
+          padding: '10px 40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -420,7 +420,7 @@ export const MatchIntelligencePage: React.FC = () => {
       {actionNotice.type && (
         <div
           style={{
-            margin: 'var(--space-4) var(--space-8) 0 var(--space-8)',
+            margin: 'var(--space-4) 40px 0 40px',
             padding: 'var(--space-3) var(--space-4)',
             backgroundColor: actionNotice.type === 'VERIFIED' ? 'var(--color-forest-bg)' : actionNotice.type === 'REJECTED' ? 'var(--color-crimson-bg)' : 'var(--color-amber-bg)',
             border: `1px solid ${actionNotice.type === 'VERIFIED' ? 'var(--color-forest-border)' : actionNotice.type === 'REJECTED' ? 'var(--color-crimson-border)' : 'var(--color-amber-border)'}`,
@@ -450,7 +450,7 @@ export const MatchIntelligencePage: React.FC = () => {
 
       {/* Main Two-Column Evidence Workspace */}
       <div style={{
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '24px 40px',
         display: 'grid',
         gridTemplateColumns: 'minmax(340px, 420px) 1fr',
         gap: 'var(--space-6)',

@@ -193,7 +193,7 @@ export const DuplicateResolutionPage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-4) var(--space-8)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -262,7 +262,7 @@ export const DuplicateResolutionPage: React.FC = () => {
       {actionMessage && (
         <div
           style={{
-            margin: 'var(--space-3) var(--space-8) 0 var(--space-8)',
+            margin: 'var(--space-3) 40px 0 40px',
             padding: 'var(--space-3) var(--space-4)',
             backgroundColor: mergedState ? 'var(--color-forest-bg)' : 'var(--color-amber-bg)',
             border: `1px solid ${mergedState ? 'var(--color-forest-border)' : 'var(--color-amber-border)'}`,
@@ -304,7 +304,7 @@ export const DuplicateResolutionPage: React.FC = () => {
 
       {/* Main Content Area */}
       <div style={{
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '24px 40px',
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-5)',

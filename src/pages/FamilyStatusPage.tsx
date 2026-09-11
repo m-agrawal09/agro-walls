@@ -163,7 +163,7 @@ export const FamilyStatusPage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-5) var(--space-6)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{

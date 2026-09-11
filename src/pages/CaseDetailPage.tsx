@@ -179,7 +179,7 @@ export const CaseDetailPage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-4) var(--space-8)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -279,7 +279,7 @@ export const CaseDetailPage: React.FC = () => {
       {actionAlert && (
         <div
           style={{
-            margin: 'var(--space-3) var(--space-8) 0 var(--space-8)',
+            margin: 'var(--space-3) 40px 0 40px',
             padding: 'var(--space-2) var(--space-4)',
             backgroundColor: 'var(--color-forest-bg)',
             border: '1px solid var(--color-forest-border)',
@@ -303,7 +303,7 @@ export const CaseDetailPage: React.FC = () => {
 
       {/* Main Content Area */}
       <div style={{
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '24px 40px',
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-5)',

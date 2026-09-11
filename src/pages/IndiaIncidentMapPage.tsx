@@ -552,7 +552,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-base)',
-        padding: '1.25rem 2rem',
+        padding: '32px 40px 24px 40px',
       }}>
         <div style={{
           display: 'flex',
@@ -726,7 +726,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
 
       {/* Map Layout Section */}
       <div style={{
-        padding: '1.5rem 2rem',
+        padding: '28px 40px',
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) 380px',
         gap: '1.5rem',

@@ -150,7 +150,7 @@ export const AuditTrailPage: React.FC = () => {
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-base)',
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '32px 40px 24px 40px',
       }}>
         <div style={{
           maxWidth: '1280px',
@@ -216,7 +216,7 @@ export const AuditTrailPage: React.FC = () => {
         <div style={{
           maxWidth: '1280px',
           margin: 'var(--space-4) auto 0',
-          padding: '0 var(--space-8)',
+          padding: '0 40px',
           width: '100%',
         }}>
           <div style={{
@@ -240,7 +240,7 @@ export const AuditTrailPage: React.FC = () => {
       <div style={{
         maxWidth: '1280px',
         margin: 'var(--space-5) auto 0',
-        padding: '0 var(--space-8)',
+        padding: '0 40px',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',

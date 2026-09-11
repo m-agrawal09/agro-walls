@@ -283,7 +283,7 @@ export const CommunityReportsPage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-4) var(--space-8)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -372,7 +372,7 @@ export const CommunityReportsPage: React.FC = () => {
         style={{
           backgroundColor: 'var(--color-amber-bg)',
           borderBottom: '1px solid var(--color-amber-border)',
-          padding: 'var(--space-3) var(--space-8)',
+          padding: '10px 40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -413,7 +413,7 @@ export const CommunityReportsPage: React.FC = () => {
       {actionAlert && (
         <div
           style={{
-            margin: 'var(--space-3) var(--space-8) 0 var(--space-8)',
+            margin: 'var(--space-3) 40px 0 40px',
             padding: 'var(--space-3) var(--space-4)',
             backgroundColor: actionAlert.type === 'ACCEPTED' ? 'var(--color-forest-bg)' : actionAlert.type === 'REJECTED' ? 'var(--color-crimson-bg)' : 'var(--color-amber-bg)',
             border: `1px solid ${actionAlert.type === 'ACCEPTED' ? 'var(--color-forest-border)' : actionAlert.type === 'REJECTED' ? 'var(--color-crimson-border)' : 'var(--color-amber-border)'}`,
@@ -439,7 +439,7 @@ export const CommunityReportsPage: React.FC = () => {
 
       {/* Main Content Area */}
       <div style={{
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '24px 40px',
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-5)',

@@ -107,7 +107,7 @@ export const AnalyticsPage: React.FC = () => {
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-base)',
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '32px 40px 24px 40px',
       }}>
         <div style={{
           maxWidth: '1280px',
@@ -153,15 +153,9 @@ export const AnalyticsPage: React.FC = () => {
             <button
               onClick={handleExportSitRep}
               className="btn btn-secondary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '12px',
-                padding: '7px 14px',
-              }}
+              style={{ height: '36px' }}
             >
-              <Download size={13} />
+              <Download size={14} />
               <span>Export SitRep Brief (PDF)</span>
             </button>
           </div>
@@ -172,7 +166,7 @@ export const AnalyticsPage: React.FC = () => {
       <div style={{
         maxWidth: '1280px',
         margin: 'var(--space-5) auto 0',
-        padding: '0 var(--space-8)',
+        padding: '0 40px',
         width: '100%',
       }}>
         <div style={{
@@ -207,7 +201,7 @@ export const AnalyticsPage: React.FC = () => {
       <div style={{
         maxWidth: '1280px',
         margin: 'var(--space-5) auto 0',
-        padding: '0 var(--space-8)',
+        padding: '0 40px',
         width: '100%',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',

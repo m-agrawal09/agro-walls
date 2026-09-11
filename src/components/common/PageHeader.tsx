@@ -22,7 +22,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div style={{
-      padding: 'var(--space-6) var(--space-8)',
+      padding: '32px 40px 24px 40px',
       backgroundColor: 'var(--bg-surface)',
       borderBottom: '1px solid var(--border-base)',
     }}>

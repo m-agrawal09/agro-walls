@@ -628,7 +628,7 @@ export const ConnectionGraphPage: React.FC = () => {
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-base)',
-        padding: 'var(--space-4) var(--space-8)',
+        padding: '32px 40px 24px 40px',
       }}>
         <div style={{
           display: 'flex',
@@ -708,7 +708,7 @@ export const ConnectionGraphPage: React.FC = () => {
       <div style={{
         backgroundColor: 'var(--bg-subtle)',
         borderBottom: '1px solid var(--border-base)',
-        padding: 'var(--space-3) var(--space-8)',
+        padding: '12px 40px',
       }}>
         <div style={{
           display: 'flex',

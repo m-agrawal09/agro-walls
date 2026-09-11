@@ -497,7 +497,7 @@ export const VerificationQueuePage: React.FC = () => {
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-4) var(--space-8)',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -551,7 +551,7 @@ export const VerificationQueuePage: React.FC = () => {
         style={{
           backgroundColor: 'var(--color-amber-bg)',
           borderBottom: '1px solid var(--color-amber-border)',
-          padding: '10px 32px',
+          padding: '10px 40px',
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
@@ -567,7 +567,7 @@ export const VerificationQueuePage: React.FC = () => {
       {actionAlert && (
         <div
           style={{
-            margin: 'var(--space-4) var(--space-8) 0 var(--space-8)',
+            margin: 'var(--space-4) 40px 0 40px',
             padding: 'var(--space-3) var(--space-4)',
             backgroundColor: actionAlert.type === 'VERIFIED' ? 'var(--color-forest-bg)' : actionAlert.type === 'REJECTED' ? 'var(--color-crimson-bg)' : 'var(--color-amber-bg)',
             border: `1px solid ${actionAlert.type === 'VERIFIED' ? 'var(--color-forest-border)' : actionAlert.type === 'REJECTED' ? 'var(--color-crimson-border)' : 'var(--color-amber-border)'}`,
@@ -617,7 +617,7 @@ export const VerificationQueuePage: React.FC = () => {
 
       {/* Main Content Area: Queue Table on Top, In-Depth Review Panel Below */}
       <div style={{
-        padding: 'var(--space-5) var(--space-8)',
+        padding: '24px 40px',
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-6)',

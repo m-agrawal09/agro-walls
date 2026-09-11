@@ -186,7 +186,7 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: '20px 32px',
+          padding: '32px 40px 24px 40px',
         }}
       >
         <div style={{
@@ -329,7 +329,7 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
 
       {/* Main Operational Dashboard Content */}
       <div style={{
-        padding: '24px 32px',
+        padding: '28px 40px',
         display: 'flex',
         flexDirection: 'column',
         gap: '24px',
