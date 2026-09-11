@@ -14,6 +14,14 @@
   --bg-surface-active: rgba(255, 255, 255, 0.70);
   --bg-panel: rgba(255, 255, 255, 0.48);
 
+  /* Component Glass Surfaces */
+  --sidebar-bg: rgba(255, 255, 255, 0.45);
+  --sidebar-border: rgba(255, 255, 255, 0.52);
+  --header-bg: rgba(255, 255, 255, 0.45);
+  --header-border: rgba(255, 255, 255, 0.52);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --input-border: rgba(255, 255, 255, 0.65);
+
   /* Typography Colors */
   --text-primary: #121417;
   --text-secondary: #2f343b;
@@ -105,4 +113,62 @@
   --sidebar-width-collapsed: 64px;
   --header-height: 56px;
   --banner-height: 32px;
+}
+
+[data-theme="dark"] {
+  /* Surface & Background Palette - Dark Frosted Glass */
+  --bg-app: transparent;
+  --bg-subtle: rgba(30, 41, 59, 0.40);
+  --bg-surface: rgba(15, 23, 42, 0.60);
+  --bg-surface-hover: rgba(30, 41, 59, 0.70);
+  --bg-surface-active: rgba(51, 65, 85, 0.80);
+  --bg-panel: rgba(15, 23, 42, 0.72);
+
+  /* Component Glass Surfaces */
+  --sidebar-bg: rgba(15, 23, 42, 0.68);
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --header-bg: rgba(15, 23, 42, 0.68);
+  --header-border: rgba(255, 255, 255, 0.12);
+  --input-bg: rgba(30, 41, 59, 0.60);
+  --input-border: rgba(255, 255, 255, 0.18);
+
+  /* Typography Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-disabled: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Structural 1px Borders */
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-base: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --border-focus: #38bdf8;
+
+  /* Operational Accents: Forest Green */
+  --color-forest: #22c55e;
+  --color-forest-hover: #16a34a;
+  --color-forest-bg: rgba(34, 197, 94, 0.18);
+  --color-forest-border: rgba(34, 197, 94, 0.35);
+  --color-forest-text: #4ade80;
+
+  /* Operational Accents: Muted Orange/Amber */
+  --color-amber: #f59e0b;
+  --color-amber-hover: #d97706;
+  --color-amber-bg: rgba(245, 158, 11, 0.18);
+  --color-amber-border: rgba(245, 158, 11, 0.35);
+  --color-amber-text: #fbbf24;
+
+  /* Operational Accents: Muted Crimson/Red */
+  --color-crimson: #ef4444;
+  --color-crimson-hover: #dc2626;
+  --color-crimson-bg: rgba(239, 68, 68, 0.20);
+  --color-crimson-border: rgba(239, 68, 68, 0.38);
+  --color-crimson-text: #f87171;
+
+  /* Tactical Charcoal / Dark */
+  --color-charcoal-900: #f8fafc;
+  --color-charcoal-800: #1e293b;
+  --color-charcoal-700: #334155;
+  --color-charcoal-100: #0f172a;
 }

@@ -4,10 +4,13 @@ import {
   Search, 
   Plus, 
   Clock,
-  User
+  User,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { StatusDot } from '../common/StatusDot';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -20,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const isOverview = location.pathname === '/' || location.pathname === '/overview';
   const [timeDisplay, setTimeDisplay] = useState('');
 
@@ -48,8 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       style={{
         height: 'var(--header-height)',
-        backgroundColor: 'rgba(255, 255, 255, 0.42)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.52)',
+        backgroundColor: 'var(--header-bg)',
+        borderBottom: '1px solid var(--header-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -82,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
           alignItems: 'center',
           gap: '8px',
           paddingLeft: '12px',
-          borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
+          borderLeft: '1px solid var(--border-subtle)',
         }}>
           <StatusDot variant="forest" pulse size={7} />
           <span style={{
@@ -128,8 +132,8 @@ export const Header: React.FC<HeaderProps> = ({
                 paddingRight: '16px',
                 fontSize: '14px',
                 fontFamily: 'var(--font-sans)',
-                backgroundColor: 'rgba(255, 255, 255, 0.55)',
-                borderColor: 'rgba(255, 255, 255, 0.65)',
+                backgroundColor: 'var(--input-bg)',
+                borderColor: 'var(--input-border)',
                 borderRadius: '8px',
               }}
             />
@@ -139,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div style={{ flex: 1 }} />
       )}
 
-      {/* Right Area: Time, Family Portal, Actions, Profile */}
+      {/* Right Area: Time, Theme Toggle, Family Portal, Actions, Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {/* Clock */}
         <div style={{
@@ -154,6 +158,29 @@ export const Header: React.FC<HeaderProps> = ({
           <Clock size={14} color="var(--text-muted)" />
           <span style={{ fontWeight: 550 }}>{timeDisplay}</span>
         </div>
+
+        {/* Theme Toggle Button (Light/Dark mode) */}
+        <button
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          className="btn btn-secondary"
+          style={{
+            width: '34px',
+            height: '34px',
+            padding: 0,
+            borderRadius: '7px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {theme === 'dark' ? (
+            <Sun size={16} color="#fbbf24" />
+          ) : (
+            <Moon size={16} color="var(--text-secondary)" />
+          )}
+        </button>
 
         {/* Public Family Status Portal Link */}
         <button
@@ -177,10 +204,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Profile Avatar */}
         <div
           style={{
-            width: '30px',
-            height: '30px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            backgroundColor: 'var(--bg-surface)',
             border: '1px solid var(--border-base)',
             display: 'flex',
             alignItems: 'center',

@@ -16,11 +16,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     <aside
       style={{
         width: isOpen ? 'var(--sidebar-width)' : 'var(--sidebar-width-collapsed)',
-        backgroundColor: 'rgba(255, 255, 255, 0.42)',
+        backgroundColor: 'var(--sidebar-bg)',
         backdropFilter: 'blur(24px) saturate(150%)',
         WebkitBackdropFilter: 'blur(24px) saturate(150%)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.52)',
-        boxShadow: '4px 0 24px rgba(76, 117, 186, 0.08)',
+        borderRight: '1px solid var(--sidebar-border)',
+        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.08)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       <div
         style={{
           padding: isOpen ? '0 16px' : '0 12px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.45)',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                       margin: '1px 8px',
                       padding: isOpen ? '7px 12px' : '8px 0',
                       borderRadius: '7px',
-                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
+                      backgroundColor: isActive ? 'var(--bg-surface-active)' : 'transparent',
                       color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                       fontWeight: isActive ? 600 : 500,
                       fontSize: '14px',
@@ -142,12 +142,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                       letterSpacing: '-0.01em',
                       textDecoration: 'none',
                       position: 'relative',
-                      boxShadow: isActive ? '0 1px 3px rgba(76, 117, 186, 0.12)' : 'none',
+                      boxShadow: isActive ? '0 1px 3px rgba(0, 0, 0, 0.10)' : 'none',
                       transition: 'all 0.12s ease',
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
+                        e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
                         e.currentTarget.style.color = 'var(--text-primary)';
                       }
                     }}
