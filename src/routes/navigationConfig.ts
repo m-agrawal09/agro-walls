@@ -11,6 +11,7 @@ import {
   ScrollText,
   ShieldCheck,
   Sliders,
+  Share2,
   LucideIcon
 } from 'lucide-react';
 
@@ -114,6 +115,15 @@ export const navigationConfig: NavSectionConfig[] = [
         icon: BarChart3,
         shortcut: '8',
         description: 'Disaster zone geospatial density & resolution metrics',
+      },
+      {
+        id: 'connection-graph',
+        label: 'Connection Graph',
+        path: '/connection-graph',
+        icon: Share2,
+        badge: { text: 'PHYSICS', variant: 'forest' },
+        shortcut: '9',
+        description: 'Physics-enabled link analysis & multi-agency relationship graph',
       },
     ],
   },

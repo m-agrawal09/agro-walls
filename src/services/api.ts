@@ -215,4 +215,12 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch source feeds');
     return res.json();
   },
+
+  // Connection Network Graph
+  async getNetworkGraph() {
+    const res = await fetch(`${API_BASE}/network-graph`);
+    if (!res.ok) throw new Error('Failed to fetch network graph');
+    return res.json();
+  },
 };
+

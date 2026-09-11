@@ -17,6 +17,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { AuditTrailPage } from './pages/AuditTrailPage';
 import { PrivacyAccessPage } from './pages/PrivacyAccessPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ConnectionGraphPage } from './pages/ConnectionGraphPage';
 
 export const App: React.FC = () => {
   return (
@@ -41,6 +42,8 @@ export const App: React.FC = () => {
             <Route path="community-reports" element={<CommunityReportsPage />} />
             <Route path="source-network" element={<SourceNetworkPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="connection-graph" element={<ConnectionGraphPage />} />
+            <Route path="network-graph" element={<ConnectionGraphPage />} />
             <Route path="audit" element={<AuditTrailPage />} />
             <Route path="privacy" element={<PrivacyAccessPage />} />
             <Route path="settings" element={<SettingsPage />} />
