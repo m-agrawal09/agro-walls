@@ -5,9 +5,9 @@ import { OverviewPage } from './pages/OverviewPage';
 import { AddReportPage } from './pages/AddReportPage';
 import { MatchIntelligencePage } from './pages/MatchIntelligencePage';
 import { VerificationQueuePage } from './pages/VerificationQueuePage';
+import { CaseDetailPage } from './pages/CaseDetailPage';
+import { DuplicateResolutionPage } from './pages/DuplicateResolutionPage';
 import {
-  LiveCasesPage,
-  DuplicateResolutionPage,
   CommunityReportsPage,
   SourceNetworkPage,
   AnalyticsPage,
@@ -23,7 +23,8 @@ export const App: React.FC = () => {
         <Route path="/" element={<AppShell />}>
           <Route index element={<Navigate to="/overview" replace />} />
           <Route path="overview" element={<OverviewPage />} />
-          <Route path="cases" element={<LiveCasesPage />} />
+          <Route path="cases" element={<CaseDetailPage />} />
+          <Route path="cases/:id" element={<CaseDetailPage />} />
           <Route path="report/new" element={<AddReportPage />} />
           <Route path="match-intel" element={<MatchIntelligencePage />} />
           <Route path="verification" element={<VerificationQueuePage />} />
