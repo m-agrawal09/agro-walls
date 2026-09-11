@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
+import { useNavigate } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 export type FilterCategory = 'All' | 'High Priority' | 'Potential Match' | 'Needs Review' | 'More Information';
 
@@ -62,6 +64,56 @@ export interface VerificationCase {
 }
 
 const mockCases: VerificationCase[] = [
+  {
+    caseId: 'MP-2026-00421',
+    missingName: 'Rahul Agrawal',
+    missingAgeGender: '24 M',
+    missingLocation: 'Relief Zone B (Sector 4 Narmada Riverfront)',
+    missingClothing: 'Navy blue collared polo shirt, beige cargo pants, dark rubber sandals',
+    missingMarks: 'Healed scar on right chin (~2cm from childhood fall), small mole below left eye',
+    missingSource: 'State Helpline 1070 (Elder Brother: Sumeet Agrawal)',
+    missingContact: '+91 98261 44102',
+
+    candidateName: 'Rahul Agarwal',
+    candidateRef: 'FND-2026-01892',
+    candidateAgeGender: '24 M (DOB: 14 Aug 2002 confirmed)',
+    candidateLocation: 'Disaster Relief Camp Ward 6, Polytechnic Campus',
+    candidateClothing: 'Dark blue polo t-shirt, khaki cargo trousers, dark sandals',
+    candidateMarks: 'Healed scar on right chin (~2cm) confirmed by on-site nurse Sister Vandana',
+    candidateSource: 'Relief Camp Ward 6 Triage Desk #4',
+    candidateContact: 'Camp Incharge Shri V. P. Patel',
+
+    confidence: 94,
+    sourceSummary: 'Camp Ward 6 Polytechnic',
+    submittedAgo: '8m ago',
+    priority: 'HIGH',
+    status: 'NEEDS REVIEW',
+    filterGroup: 'High Priority',
+
+    matchingEvidence: [
+      'Name match: Rahul Agrawal vs Rahul Agarwal (Phonetic Levenshtein 96%)',
+      'Exact age alignment: 24 years (DOB: 14 Aug 2002 corroborated via DigiLocker token)',
+      'Physical identifier: Healed scar on right chin (~2cm) confirmed by camp nurse Sister Vandana',
+      'Clothing consistency: Navy/dark blue polo shirt and beige/khaki trousers match report',
+      'Location proximity: Relief Camp Ward 6 is 3.2 km from Sethani Ghat evacuation zone',
+    ],
+    conflictingInfo: [
+      'Spelling variance in camp roster logged as "Agarwal" vs helpline intake "Agrawal"',
+      'Mobile phone and wallet were lost during flood transit boat rescue',
+    ],
+    sourceHistory: [
+      '09:15 LOC — Helpline 1070 registered missing notice from brother Sumeet Agrawal',
+      '11:30 LOC — Red Cross volunteer field sighting recorded along evacuation corridor',
+      '15:42 LOC — Polytechnic Relief Camp Ward 6 logged evacuee registration',
+      '15:46 LOC — Algorithmic match engine generated correlation score 94%',
+    ],
+    timeline: [
+      { timestamp: '11 Sep, 08:30 LOC', actor: 'Family', action: 'Last Seen', detail: 'Separated while assisting elderly neighbors onto SDRF evacuation tractor' },
+      { timestamp: '11 Sep, 09:15 LOC', actor: 'Helpline 1070', action: 'Intake Filed', detail: 'Case MP-2026-00421 opened as High Priority Missing' },
+      { timestamp: '11 Sep, 15:42 LOC', actor: 'Camp Ward 6', action: 'Sheltered', detail: 'Registered at triage desk with minor abrasions, given first aid' },
+      { timestamp: '11 Sep, 15:46 LOC', actor: 'System Core', action: 'Match Correlated', detail: 'Assigned to Tier 2 Dispatcher verification workbench' },
+    ],
+  },
   {
     caseId: 'RC-CIF-0941',
     missingName: 'Ramesh Chandra Verma',
@@ -306,6 +358,8 @@ const mockCases: VerificationCase[] = [
 ];
 
 export const VerificationQueuePage: React.FC = () => {
+  const navigate = useNavigate();
+  const { verifyMatch } = useCaseContext();
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCaseId, setSelectedCaseId] = useState<string>(mockCases[0].caseId);
@@ -344,6 +398,11 @@ export const VerificationQueuePage: React.FC = () => {
     if (!activeActionType) return;
 
     if (activeActionType === 'VERIFY') {
+      verifyMatch(
+        selectedCase.candidateRef,
+        'DISP-884 (Certified Dispatcher)',
+        officerNotes || 'Sworn physical verification: Healed right chin scar (~2cm), biometrics and clothing match.'
+      );
       setActionAlert({
         type: 'VERIFIED',
         message: `MATCH CONFIRMED & SIGNED: Case ${selectedCase.caseId} verified by Dispatcher DISP-884. Evidence locked to immutable audit ledger. Family liaison notified at ${selectedCase.missingContact}.`,
@@ -506,13 +565,33 @@ export const VerificationQueuePage: React.FC = () => {
             {(actionAlert.type === 'REQUEST_INFO' || actionAlert.type === 'ESCALATE') && <AlertTriangle size={16} />}
             <strong>{actionAlert.message}</strong>
           </div>
-          <button
-            onClick={() => setActionAlert(null)}
-            className="btn btn-ghost"
-            style={{ height: '22px', padding: '0 6px', fontSize: '11px' }}
-          >
-            Dismiss
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            {actionAlert.type === 'VERIFIED' && (
+              <>
+                <button
+                  onClick={() => navigate('/cases/MP-2026-00421')}
+                  className="btn btn-secondary"
+                  style={{ height: '26px', padding: '0 10px', fontSize: '11px', fontWeight: 600 }}
+                >
+                  <span>Step 7: View Case Dossier →</span>
+                </button>
+                <button
+                  onClick={() => navigate('/duplicates')}
+                  className="btn btn-secondary"
+                  style={{ height: '26px', padding: '0 10px', fontSize: '11px', fontWeight: 600 }}
+                >
+                  <span>Step 8: Consolidate Duplicates →</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setActionAlert(null)}
+              className="btn btn-ghost"
+              style={{ height: '22px', padding: '0 6px', fontSize: '11px' }}
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

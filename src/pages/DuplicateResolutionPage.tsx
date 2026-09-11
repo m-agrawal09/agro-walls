@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
+import { useNavigate } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 interface DuplicateReport {
   id: string;
@@ -37,10 +39,16 @@ interface AttributeRow {
 }
 
 export const DuplicateResolutionPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { duplicatesMerged, mergeDuplicates } = useCaseContext();
   const [canonicalId, setCanonicalId] = useState<string>('MP-2026-00421');
   const [confirmModalOpen, setConfirmModalOpen] = useState<boolean>(false);
-  const [mergedState, setMergedState] = useState<boolean>(false);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [mergedState, setMergedState] = useState<boolean>(duplicatesMerged);
+  const [actionMessage, setActionMessage] = useState<string | null>(
+    duplicatesMerged 
+      ? 'REPORTS CONSOLIDATED: Canonical master record established under MP-2026-00421. DUP-2026-0089 and DUP-2026-0114 linked non-destructively.' 
+      : null
+  );
   const [operatorNotes, setOperatorNotes] = useState<string>('');
 
   const reports: DuplicateReport[] = [
@@ -154,6 +162,7 @@ export const DuplicateResolutionPage: React.FC = () => {
   ];
 
   const handleMergeSubmit = () => {
+    mergeDuplicates(canonicalId, operatorNotes || 'Non-destructive consolidation: DUP-2026-0089 and DUP-2026-0114 linked under canonical master MP-2026-00421.');
     setMergedState(true);
     setConfirmModalOpen(false);
     setActionMessage(`REPORTS CONSOLIDATED: Canonical master record established under ${canonicalId}. Non-destructive merge complete: DUP-2026-0089 and DUP-2026-0114 preserved as verified historical references with full audit provenance.`);
@@ -259,9 +268,27 @@ export const DuplicateResolutionPage: React.FC = () => {
             {mergedState ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             <strong>{actionMessage}</strong>
           </div>
-          <button onClick={() => setActionMessage(null)} className="btn btn-ghost" style={{ padding: 2 }}>
-            <X size={12} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            {mergedState && (
+              <button
+                onClick={() => navigate('/status')}
+                className="btn btn-primary"
+                style={{
+                  height: '26px',
+                  padding: '0 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  backgroundColor: 'var(--color-forest)',
+                  color: '#ffffff',
+                }}
+              >
+                <span>Step 9: Open Family Status View →</span>
+              </button>
+            )}
+            <button onClick={() => setActionMessage(null)} className="btn btn-ghost" style={{ padding: 2 }}>
+              <X size={12} />
+            </button>
+          </div>
         </div>
       )}
 

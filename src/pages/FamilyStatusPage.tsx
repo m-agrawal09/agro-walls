@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Phone, 
@@ -7,6 +7,7 @@ import {
   X 
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 export type CaseStatusType = 
   | 'Report Received'
@@ -72,10 +73,24 @@ const statusProfiles: Record<CaseStatusType, StatusProfile> = {
 export const FamilyStatusPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchInput, setSearchInput] = useState<string>(id || 'MP-2026-00421');
-  const [activeCaseId, setActiveCaseId] = useState<string>('MP-2026-00421');
-  const [currentStatus, setCurrentStatus] = useState<CaseStatusType>('Looking for a Match');
+  const { caseStatus, verifiedCandidate } = useCaseContext();
+  const initialCaseId = id || 'MP-2026-00421';
+  const [searchInput, setSearchInput] = useState<string>(initialCaseId);
+  const [activeCaseId, setActiveCaseId] = useState<string>(initialCaseId);
+
+  const isContextVerified = caseStatus === 'VERIFIED MATCH' || caseStatus === 'FAMILY NOTIFIED';
+  const [currentStatus, setCurrentStatus] = useState<CaseStatusType>(
+    initialCaseId === 'MP-2026-00421' && isContextVerified ? 'Verified Match' : 'Looking for a Match'
+  );
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeCaseId === 'MP-2026-00421') {
+      if (isContextVerified) {
+        setCurrentStatus('Verified Match');
+      }
+    }
+  }, [caseStatus, activeCaseId, isContextVerified]);
 
   const profile = statusProfiles[currentStatus];
 
@@ -91,8 +106,12 @@ export const FamilyStatusPage: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchInput.trim()) return;
-    setActiveCaseId(searchInput.trim().toUpperCase());
-    setFeedbackNotice(`Showing live operational status for Case ${searchInput.trim().toUpperCase()}`);
+    const cid = searchInput.trim().toUpperCase();
+    setActiveCaseId(cid);
+    if (cid === 'MP-2026-00421' && isContextVerified) {
+      setCurrentStatus('Verified Match');
+    }
+    setFeedbackNotice(`Showing live operational status for Case ${cid}`);
   };
 
   return (
@@ -336,6 +355,28 @@ export const FamilyStatusPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* If verified, show verified confirmation note */}
+          {currentStatus === 'Verified Match' && (
+            <div style={{
+              backgroundColor: 'var(--color-forest-bg)',
+              border: '1px solid var(--color-forest-border)',
+              borderRadius: 'var(--radius-sm)',
+              padding: 'var(--space-3) var(--space-4)',
+              fontSize: '12px',
+              color: 'var(--color-forest-text)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+            }}>
+              <strong>OFFICIAL VERIFICATION CONFIRMED:</strong>
+              <span>
+                {verifiedCandidate 
+                  ? `Correlated with candidate record ${verifiedCandidate.ref} (${verifiedCandidate.name}) at ${verifiedCandidate.location}. Verified by ${verifiedCandidate.verifiedBy}.` 
+                  : 'Positive identification corroborated by sworn dispatch officers at Relief Camp Ward 6. A dedicated family liaison is contacting your registered phone number.'}
+              </span>
+            </div>
+          )}
 
           {/* Essential Reassurance Message (Calm, Trustworthy Box) */}
           <div

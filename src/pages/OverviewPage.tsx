@@ -10,6 +10,7 @@ import {
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 interface VerificationItem {
   caseId: string;
@@ -20,7 +21,7 @@ interface VerificationItem {
   matchTarget: string;
   confidence: number;
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM';
-  status: 'PENDING FIELD CHECK' | 'PHOTO REVIEW' | 'BIOMETRIC CORRELATED';
+  status: 'PENDING FIELD CHECK' | 'PHOTO REVIEW' | 'BIOMETRIC CORRELATED' | 'VERIFIED MATCH';
   reportedAgo: string;
 }
 
@@ -48,6 +49,7 @@ interface SourceStat {
 
 export const OverviewPage: React.FC = () => {
   const navigate = useNavigate();
+  const { caseStatus, priority: contextPriority } = useCaseContext();
   const [selectedDisaster, setSelectedDisaster] = useState('Central India Flood Response');
   const [disasterFilterOpen, setDisasterFilterOpen] = useState(false);
 
@@ -58,6 +60,18 @@ export const OverviewPage: React.FC = () => {
   ];
 
   const verificationQueue: VerificationItem[] = [
+    {
+      caseId: 'MP-2026-00421',
+      name: 'Rahul Agrawal',
+      ageGender: '24 M',
+      location: 'Relief Zone B (Sector 4 Riverfront)',
+      source: 'State Helpline 1070 (Brother: Sumeet)',
+      matchTarget: 'Candidate: Rahul Agarwal (Ward 6 Camp)',
+      confidence: 94,
+      priority: contextPriority === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+      status: caseStatus === 'VERIFIED MATCH' ? 'VERIFIED MATCH' : 'PHOTO REVIEW',
+      reportedAgo: '9h ago',
+    },
     {
       caseId: 'RC-CIF-0941',
       name: 'Ramesh Chandra Verma',
@@ -121,6 +135,17 @@ export const OverviewPage: React.FC = () => {
   ];
 
   const recentActivity: ActivityItem[] = [
+    ...(caseStatus === 'VERIFIED MATCH' ? [{
+      id: 'ACT-492',
+      timestamp: '15:48:22 LOC',
+      source: 'Relief Camp Ward 6',
+      sourceType: 'RELIEF CAMP' as const,
+      action: 'Sworn match verified for Rahul Agrawal with Candidate Rahul Agarwal (Ward 6)',
+      person: 'Rahul Agrawal (24 M)',
+      caseId: 'MP-2026-00421',
+      operator: 'DISP-884',
+      status: 'VERIFIED' as const,
+    }] : []),
     {
       id: 'ACT-491',
       timestamp: '17:16:04 LOC',
@@ -713,97 +738,129 @@ export const OverviewPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {verificationQueue.map((item, idx) => (
-                  <tr
-                    key={item.caseId}
-                    style={{
-                      borderBottom: idx === verificationQueue.length - 1 ? 'none' : '1px solid var(--border-subtle)',
-                      transition: 'background-color 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    {/* Case ID */}
-                    <td style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {item.caseId}
-                    </td>
-
-                    {/* Person */}
-                    <td style={{ padding: '10px 16px' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Target: {item.matchTarget}</div>
-                    </td>
-
-                    {/* Age / Gender */}
-                    <td style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-                      {item.ageGender}
-                    </td>
-
-                    {/* Location */}
-                    <td style={{ padding: '10px 16px', color: 'var(--text-secondary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <MapPin size={12} color="var(--text-muted)" />
-                        <span>{item.location}</span>
-                      </div>
-                    </td>
-
-                    {/* Source */}
-                    <td style={{ padding: '10px 16px', color: 'var(--text-secondary)' }}>
-                      {item.source}
-                    </td>
-
-                    {/* Match Confidence */}
-                    <td style={{ padding: '10px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                          width: '46px',
-                          height: '6px',
-                          backgroundColor: 'var(--bg-subtle)',
-                          borderRadius: '2px',
-                          overflow: 'hidden',
-                        }}>
-                          <div style={{
-                            width: `${item.confidence}%`,
-                            height: '100%',
-                            backgroundColor: item.confidence >= 90 ? 'var(--color-forest)' : 'var(--color-amber)',
-                          }} />
+                {verificationQueue.map((item, idx) => {
+                  const isDemoCase = item.caseId === 'MP-2026-00421';
+                  return (
+                    <tr
+                      key={item.caseId}
+                      onClick={() => {
+                        if (isDemoCase) {
+                          navigate('/cases/MP-2026-00421');
+                        } else {
+                          navigate('/verification');
+                        }
+                      }}
+                      style={{
+                        borderBottom: idx === verificationQueue.length - 1 ? 'none' : '1px solid var(--border-subtle)',
+                        backgroundColor: isDemoCase ? 'var(--color-amber-bg)' : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.1s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isDemoCase) e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isDemoCase) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      {/* Case ID */}
+                      <td style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{item.caseId}</span>
+                          {isDemoCase && <Badge variant="amber">DEMO</Badge>}
                         </div>
-                        <span style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontWeight: 600,
-                          fontSize: '12px',
-                          color: item.confidence >= 90 ? 'var(--color-forest)' : 'var(--color-amber)',
-                        }}>
-                          {item.confidence}%
-                        </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Priority & Status */}
-                    <td style={{ padding: '10px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <Badge variant={item.priority === 'CRITICAL' ? 'crimson' : item.priority === 'HIGH' ? 'amber' : 'default'}>
-                          {item.priority}
-                        </Badge>
-                        <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </td>
+                      {/* Person */}
+                      <td style={{ padding: '10px 16px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Target: {item.matchTarget}</div>
+                      </td>
 
-                    {/* Action */}
-                    <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                      <button
-                        onClick={() => navigate('/verification')}
-                        className="btn btn-secondary"
-                        style={{ height: '28px', padding: '0 10px', fontSize: '12px' }}
-                      >
-                        <FileCheck size={13} />
-                        <span>Verify</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Age / Gender */}
+                      <td style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                        {item.ageGender}
+                      </td>
+
+                      {/* Location */}
+                      <td style={{ padding: '10px 16px', color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={12} color="var(--text-muted)" />
+                          <span>{item.location}</span>
+                        </div>
+                      </td>
+
+                      {/* Source */}
+                      <td style={{ padding: '10px 16px', color: 'var(--text-secondary)' }}>
+                        {item.source}
+                      </td>
+
+                      {/* Match Confidence */}
+                      <td style={{ padding: '10px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            width: '46px',
+                            height: '6px',
+                            backgroundColor: 'var(--bg-subtle)',
+                            borderRadius: '2px',
+                            overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              width: `${item.confidence}%`,
+                              height: '100%',
+                              backgroundColor: item.confidence >= 90 ? 'var(--color-forest)' : 'var(--color-amber)',
+                            }} />
+                          </div>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 600,
+                            fontSize: '12px',
+                            color: item.confidence >= 90 ? 'var(--color-forest)' : 'var(--color-amber)',
+                          }}>
+                            {item.confidence}%
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Priority & Status */}
+                      <td style={{ padding: '10px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <Badge variant={item.priority === 'CRITICAL' ? 'crimson' : item.priority === 'HIGH' ? 'amber' : 'default'}>
+                            {item.priority}
+                          </Badge>
+                          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: item.status === 'VERIFIED MATCH' ? 'var(--color-forest-text)' : 'var(--text-muted)', fontWeight: item.status === 'VERIFIED MATCH' ? 600 : 400 }}>
+                            {item.status}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Action */}
+                      <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isDemoCase) {
+                              navigate('/cases/MP-2026-00421');
+                            } else {
+                              navigate('/verification');
+                            }
+                          }}
+                          className={isDemoCase ? 'btn btn-primary' : 'btn btn-secondary'}
+                          style={{
+                            height: '28px',
+                            padding: '0 10px',
+                            fontSize: '12px',
+                            backgroundColor: isDemoCase ? 'var(--color-charcoal-900)' : undefined,
+                            color: isDemoCase ? '#ffffff' : undefined,
+                          }}
+                        >
+                          <FileCheck size={13} />
+                          <span>{isDemoCase ? 'Case File' : 'Verify'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -15,13 +15,14 @@ import {
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 export const CaseDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const caseId = id || 'MP-2026-00421';
+  const { caseStatus, priority, setPriority, verifiedCandidate } = useCaseContext();
 
-  const [priority, setPriority] = useState<'CRITICAL' | 'HIGH' | 'ROUTINE'>('HIGH');
   const [assignedVerifier, setAssignedVerifier] = useState<string>('DISP-884 (Tier 2)');
   const [actionAlert, setActionAlert] = useState<string | null>(null);
   const [addInfoModalOpen, setAddInfoModalOpen] = useState<boolean>(false);
@@ -35,7 +36,7 @@ export const CaseDetailPage: React.FC = () => {
     age: 24,
     dob: '14 Aug 2002',
     gender: 'Male',
-    status: 'LOOKING FOR A MATCH',
+    status: caseStatus,
     dateReported: '11 Sep 2026, 09:15 LOC',
     primarySource: 'State Disaster Helpline 1070',
     primaryCaller: 'Sumeet Agrawal (Elder Brother)',
@@ -345,11 +346,11 @@ export const CaseDetailPage: React.FC = () => {
                     fontSize: '11px',
                     fontFamily: 'var(--font-mono)',
                     fontWeight: 700,
-                    backgroundColor: 'var(--color-amber-bg)',
-                    color: 'var(--color-amber-text)',
-                    border: '1px solid var(--color-amber-border)',
+                    backgroundColor: caseStatus === 'VERIFIED MATCH' ? 'var(--color-forest-bg)' : 'var(--color-amber-bg)',
+                    color: caseStatus === 'VERIFIED MATCH' ? 'var(--color-forest-text)' : 'var(--color-amber-text)',
+                    border: caseStatus === 'VERIFIED MATCH' ? '1px solid var(--color-forest-border)' : '1px solid var(--color-amber-border)',
                   }}>
-                    <StatusDot variant="amber" pulse size={6} />
+                    <StatusDot variant={caseStatus === 'VERIFIED MATCH' ? 'forest' : 'amber'} pulse size={6} />
                     <span>STATUS: {caseData.status}</span>
                   </div>
 
@@ -393,6 +394,49 @@ export const CaseDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* VERIFIED POSITIVE IDENTIFICATION BANNER */}
+        {caseStatus === 'VERIFIED MATCH' && (
+          <div style={{
+            backgroundColor: 'var(--color-forest-bg)',
+            border: '1px solid var(--color-forest-border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: 'var(--space-4) var(--space-5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 'var(--space-3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CheckCircle2 size={22} color="var(--color-forest)" />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--color-forest-text)' }}>
+                  POSITIVE IDENTIFICATION CONFIRMED: Rahul Agarwal ({verifiedCandidate?.ref || 'FND-2026-01892'})
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  Corroborated by {verifiedCandidate?.verifiedBy || 'DISP-884'} at {verifiedCandidate?.verifiedAt || '11 Sep, 15:48 LOC'} · Located at Disaster Relief Camp Ward 6, Polytechnic Campus
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button
+                onClick={() => navigate('/duplicates')}
+                className="btn btn-secondary"
+                style={{ fontSize: '11px', padding: '5px 12px' }}
+              >
+                <span>Step 8: Consolidate Duplicates →</span>
+              </button>
+              <button
+                onClick={() => navigate('/status')}
+                className="btn btn-primary"
+                style={{ fontSize: '11px', padding: '5px 12px', backgroundColor: 'var(--color-forest)', color: '#ffffff' }}
+              >
+                <span>Step 9: Open Family View →</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* =========================================================================
             SECTION 1 & 2: DUAL GRID (IDENTITY + LAST KNOWN INFORMATION)

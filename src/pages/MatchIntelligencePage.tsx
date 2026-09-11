@@ -12,6 +12,7 @@ import {
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
+import { useCaseContext } from '../context/CaseContext';
 
 interface EvidenceRow {
   parameter: string;
@@ -244,9 +245,11 @@ export const MatchIntelligencePage: React.FC = () => {
     },
   ];
 
+  const { verifyMatch } = useCaseContext();
   const currentCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
 
   const handleVerify = () => {
+    verifyMatch(currentCandidate.id, 'DISP-884', `Biometric, healed chin scar (~2cm), and clothing match confirmed for ${currentCandidate.name} (${currentCandidate.caseRef}).`);
     setActionNotice({
       type: 'VERIFIED',
       message: `POSITIVE IDENTIFICATION RECORDED: ${currentCandidate.name} (${currentCandidate.caseRef}) has been linked to Case MP-2026-00421. Verification logged under Operator DISP-884. Family liaison notified.`,
@@ -884,22 +887,37 @@ export const MatchIntelligencePage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Primary Verification Action */}
-              <button
-                onClick={handleVerify}
-                className="btn btn-danger"
-                style={{
-                  height: '38px',
-                  padding: '0 24px',
-                  backgroundColor: 'var(--color-crimson)',
-                  borderColor: 'var(--color-crimson)',
-                  fontWeight: 600,
-                  fontSize: 'var(--text-sm)',
-                }}
-              >
-                <CheckCircle2 size={16} />
-                <span>VERIFY MATCH</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <button
+                  onClick={() => navigate('/verification')}
+                  className="btn btn-secondary"
+                  style={{
+                    height: '38px',
+                    padding: '0 16px',
+                    fontWeight: 600,
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  <span>Step 4: Verification Queue →</span>
+                </button>
+
+                {/* Primary Verification Action */}
+                <button
+                  onClick={handleVerify}
+                  className="btn btn-danger"
+                  style={{
+                    height: '38px',
+                    padding: '0 24px',
+                    backgroundColor: 'var(--color-crimson)',
+                    borderColor: 'var(--color-crimson)',
+                    fontWeight: 600,
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>VERIFY MATCH</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
