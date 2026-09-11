@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
+import { PublicContributionSection } from '../components/common/PublicContributionSection';
 import { useNavigate } from 'react-router-dom';
 
 export type CommunityTab = 'New Submissions' | 'Under Review' | 'Accepted' | 'Rejected' | 'Potential Duplicate';
@@ -409,6 +410,9 @@ export const CommunityReportsPage: React.FC = () => {
         width: '100%',
         margin: '0 auto',
       }}>
+        {/* Public Contribution Architecture & Workflow */}
+        <PublicContributionSection />
+
         {/* Category Tabs */}
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
           {(['New Submissions', 'Under Review', 'Accepted', 'Rejected', 'Potential Duplicate'] as CommunityTab[]).map((tab) => (
