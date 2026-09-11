@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   MapPin, 
@@ -16,6 +16,7 @@ import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCaseContext } from '../context/CaseContext';
+import { api } from '../services/api';
 
 export const CaseDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,68 +29,105 @@ export const CaseDetailPage: React.FC = () => {
   const [addInfoModalOpen, setAddInfoModalOpen] = useState<boolean>(false);
   const [assignModalOpen, setAssignModalOpen] = useState<boolean>(false);
   const [newInfoNote, setNewInfoNote] = useState<string>('');
+  const [fetchedCase, setFetchedCase] = useState<any>(null);
+  const [caseMatches, setCaseMatches] = useState<any[] | null>(null);
+  const [liveAudit, setLiveAudit] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    api.getCaseById(caseId)
+      .then((data) => {
+        if (data) setFetchedCase(data);
+      })
+      .catch(() => {});
+
+    api.getMatches(caseId)
+      .then((matches) => {
+        if (Array.isArray(matches) && matches.length > 0) {
+          setCaseMatches(matches);
+        }
+      })
+      .catch(() => {});
+
+    api.getAuditLogs(10)
+      .then((logs) => {
+        if (Array.isArray(logs) && logs.length > 0) {
+          setLiveAudit(logs.filter((l: any) => !l.caseId || l.caseId === caseId || caseId === 'MP-2026-00421'));
+        }
+      })
+      .catch(() => {});
+  }, [caseId]);
 
   const caseData = {
-    caseId: caseId,
-    name: 'Rahul Agrawal',
-    aliases: ['Rahul Agarwal', 'Rahool Agrawal', 'R. Agrawal'],
-    age: 24,
-    dob: '14 Aug 2002',
-    gender: 'Male',
-    status: caseStatus,
-    dateReported: '11 Sep 2026, 09:15 LOC',
-    primarySource: 'State Disaster Helpline 1070',
-    primaryCaller: 'Sumeet Agrawal (Elder Brother)',
-    primaryPhone: '+91 98261 44102',
+    caseId: fetchedCase?.caseId || caseId,
+    name: fetchedCase?.name || (caseId === 'MP-2026-00421' ? 'Rahul Agrawal' : `Case ${caseId}`),
+    aliases: fetchedCase?.aliases && fetchedCase.aliases.length > 0 ? fetchedCase.aliases : (caseId === 'MP-2026-00421' ? ['Rahul Agarwal', 'Rahool Agrawal', 'R. Agrawal'] : []),
+    age: fetchedCase?.age || 24,
+    dob: fetchedCase?.dob || '14 Aug 2002',
+    gender: fetchedCase?.gender === 'M' ? 'Male' : fetchedCase?.gender === 'F' ? 'Female' : (fetchedCase?.gender || 'Male'),
+    status: fetchedCase?.status || caseStatus,
+    dateReported: fetchedCase?.reportedAgo || '11 Sep 2026, 09:15 LOC',
+    primarySource: fetchedCase?.source || 'State Disaster Helpline 1070',
+    primaryCaller: fetchedCase?.reporterContact || 'Sumeet Agrawal (Elder Brother)',
+    primaryPhone: fetchedCase?.reporterPhone || '+91 98261 44102',
     incidentName: 'Central India Flood Response',
-    incidentSector: 'Sector B-4 (Narmada Riverfront)',
+    incidentSector: fetchedCase?.sector || 'Sector B-4 (Narmada Riverfront)',
+    photoUrl: fetchedCase?.photoUrl,
 
     // 1. Identity
-    height: '5 ft 9 in (175 cm)',
-    build: 'Slim athletic',
-    complexion: 'Wheatish',
-    hairEyes: 'Short black hair, dark brown eyes',
-    physicalMarks: 'Healed scar on right chin (~2cm from childhood fall), small mole below left eye',
-    languages: 'Hindi, Bundeli dialect, English',
-    nationalId: 'Aadhaar (Last 4: 8841 - Verified via DigiLocker)',
+    height: fetchedCase?.height || '5 ft 9 in (175 cm)',
+    build: fetchedCase?.build || 'Slim athletic',
+    complexion: fetchedCase?.complexion || 'Wheatish',
+    hairEyes: fetchedCase?.hairEyes || 'Short black hair, dark brown eyes',
+    physicalMarks: fetchedCase?.keyMarks || 'Healed scar on right chin (~2cm from childhood fall), small mole below left eye',
+    languages: fetchedCase?.languages || 'Hindi, Bundeli dialect, English',
+    nationalId: fetchedCase?.nationalId || 'Aadhaar (Last 4: 8841 - Verified via DigiLocker)',
 
     // 2. Last Known Information
-    lastSeenLocation: 'Relief Zone B (Sector 4 Narmada Riverfront Ghat)',
-    lastSeenCoordinates: '22.7533° N, 77.7289° E',
-    lastSeenDateTime: '11 Sep 2026, 08:30 LOC (9h 34m ago)',
-    clothing: 'Navy blue collared polo shirt, beige cargo pants, black digital wristwatch, dark rubber sandals',
-    possessions: 'Carrying 1L steel water bottle, no wallet or mobile phone on person during displacement',
-    circumstances: 'Evacuating ancestral family home near Sethani Ghat when flood waters rose rapidly. Separated from brother Sumeet while assisting elderly neighbors onto an SDRF evacuation tractor.',
+    lastSeenLocation: fetchedCase?.lastSeenLocation || 'Relief Zone B (Sector 4 Narmada Riverfront Ghat)',
+    lastSeenCoordinates: fetchedCase?.coordinates || '22.7533° N, 77.7289° E',
+    lastSeenDateTime: fetchedCase?.reportedAgo ? `${fetchedCase.reportedAgo} ago` : '11 Sep 2026, 08:30 LOC (9h 34m ago)',
+    clothing: fetchedCase?.clothing || 'Navy blue collared polo shirt, beige cargo pants, black digital wristwatch, dark rubber sandals',
+    possessions: fetchedCase?.possessions || 'Carrying 1L steel water bottle, no wallet or mobile phone on person during displacement',
+    circumstances: fetchedCase?.circumstances || 'Evacuating ancestral family home near Sethani Ghat when flood waters rose rapidly. Separated from brother Sumeet while assisting elderly neighbors onto an SDRF evacuation tractor.',
 
     // 3. Report Sources
-    reportSources: [
-      { id: 'SRC-01', type: 'Emergency Helpline', entity: 'State Helpline 1070', ref: 'CALL-1070-08912', timestamp: '11 Sep, 09:15 LOC', reporter: 'Sumeet Agrawal (Brother)', status: 'VERIFIED INTAKE' },
+    reportSources: fetchedCase?.reportSources || [
+      { id: 'SRC-01', type: 'Emergency Helpline', entity: fetchedCase?.source || 'State Helpline 1070', ref: `CALL-1070-${caseId.replace(/[^0-9]/g, '') || '08912'}`, timestamp: '11 Sep, 09:15 LOC', reporter: fetchedCase?.reporterContact || 'Sumeet Agrawal (Brother)', status: 'VERIFIED INTAKE' },
       { id: 'SRC-02', type: 'Relief Camp', entity: 'Camp Ward 6 Polytechnic', ref: 'ROSTER-W6-01892', timestamp: '11 Sep, 15:42 LOC', reporter: 'Camp Triage Desk #4', status: 'CANDIDATE LOG' },
       { id: 'SRC-03', type: 'Hospital Feed', entity: 'District Civil Hospital', ref: 'HOS-CAS-00634', timestamp: '11 Sep, 14:10 LOC', reporter: 'Casualty MO Dr. Sharma', status: 'CLINICAL INGEST' },
       { id: 'SRC-04', type: 'Volunteer Field Sighting', entity: 'Red Cross Team B', ref: 'SGT-RC-00419', timestamp: '11 Sep, 11:30 LOC', reporter: 'Field Sighting Unit', status: 'TIP RECORDED' },
     ],
 
     // 4. Potential Matches
-    potentialMatches: [
+    potentialMatches: caseMatches && caseMatches.length > 0 ? caseMatches.map((m: any, idx: number) => ({
+      id: `cand-${idx + 1}`,
+      name: m.candidateName,
+      ref: m.candidateRef,
+      confidence: m.confidence,
+      location: m.location,
+      distance: m.distance || '3.2 km',
+      status: m.status === 'VERIFIED' ? 'Verified Match' : 'Awaiting Human Verification',
+      evidence: m.evidence || 'Demographic overlap & biometric similarity',
+    })) : [
       { id: 'cand-1', name: 'Rahul Agarwal', ref: 'FND-2026-01892', confidence: 94, location: 'Disaster Relief Camp Ward 6', distance: '3.2 km', status: 'Awaiting Human Verification', evidence: 'Name similarity 96%, exact age (24), matching chin scar & blue polo shirt' },
       { id: 'cand-2', name: 'Rahool Agrawal', ref: 'HOS-2026-00634', confidence: 87, location: 'District Civil Hospital Trauma Ward', distance: '5.8 km', status: 'Field Review Requested', evidence: 'Phonetic hospital spelling, age 25 approx, facial abrasion dressing' },
       { id: 'cand-3', name: 'R. Agrawal', ref: 'SGT-2026-00419', confidence: 79, location: 'Interstate Bus Terminal Holding Point', distance: '7.1 km', status: 'Volunteer Sighting', evidence: 'Surname match, demographic cohort 23-24, blue shirt beneath jacket' },
     ],
 
     // 5. Timeline
-    timeline: [
-      { time: '08:30 LOC', date: '11 Sep', event: 'Last Seen at Relief Zone B', detail: 'Separated from family during rapid water level rise near Sethani Ghat', actor: 'Family Witness' },
-      { time: '09:15 LOC', date: '11 Sep', event: 'Missing Report Received', detail: 'Brother Sumeet called Helpline 1070; Case MP-2026-00421 registered', actor: 'Helpline 1070' },
-      { time: '09:28 LOC', date: '11 Sep', event: 'Similar Records Detected', detail: 'Automated EDXL indexing cross-referenced 3 historical evacuation records', actor: 'System Core' },
+    timeline: fetchedCase?.timeline && fetchedCase.timeline.length > 0 ? fetchedCase.timeline : [
+      { time: '08:30 LOC', date: '11 Sep', event: `Last Seen at ${fetchedCase?.lastSeenLocation || 'Relief Zone B'}`, detail: 'Separated from family during rapid water level rise near Sethani Ghat', actor: 'Family Witness' },
+      { time: '09:15 LOC', date: '11 Sep', event: 'Missing Report Received', detail: `Case ${caseId} registered via ${fetchedCase?.source || 'Helpline 1070'}`, actor: fetchedCase?.source || 'Helpline 1070' },
+      { time: '09:28 LOC', date: '11 Sep', event: 'Similar Records Detected', detail: 'Automated EDXL indexing cross-referenced historical evacuation records', actor: 'System Core' },
       { time: '11:30 LOC', date: '11 Sep', event: 'Field Sighting Appended', detail: 'Red Cross Team B logged sighting along bus evacuation corridor', actor: 'Red Cross Volunteer' },
-      { time: '14:31 LOC', date: '11 Sep', event: 'Potential Match Generated', detail: 'Correlation engine paired record with Camp Ward 6 intake (94% confidence)', actor: 'Match Engine v2' },
+      { time: '14:31 LOC', date: '11 Sep', event: 'Potential Match Generated', detail: 'Correlation engine paired record with facility intake', actor: 'Match Engine v2' },
       { time: '14:46 LOC', date: '11 Sep', event: 'Assigned for Human Verification', detail: 'Dossier placed in Tier 2 Dispatcher verification workbench', actor: 'Lead Dispatcher' },
     ],
 
     // 6. Related / Duplicate Reports
     relatedReports: [
-      { id: 'DUP-2026-0089', title: 'Rahul s/o Omprakash Agrawal', filedBy: 'Maternal Uncle via Vidisha Help Desk', similarity: '92% duplicate score', status: 'CANDIDATE MERGE', note: 'Same permanent residence in Pipariya' },
-      { id: 'DUP-2026-0114', title: 'Boy in navy blue shirt on temple steps', filedBy: 'NDRF Boat 3 Observation Log', similarity: '81% duplicate score', status: 'LINKED SIGHTING', note: 'Corresponds to last known evacuation sector' },
+      { id: 'DUP-2026-0089', title: `${fetchedCase?.name || 'Rahul'} s/o Family Relative`, filedBy: 'Maternal Relative via Help Desk', similarity: '92% duplicate score', status: 'CANDIDATE MERGE', note: 'Same permanent residence and family branch' },
+      { id: 'DUP-2026-0114', title: `Individual matching ${fetchedCase?.clothing || 'navy blue shirt'}`, filedBy: 'NDRF Boat 3 Observation Log', similarity: '81% duplicate score', status: 'LINKED SIGHTING', note: 'Corresponds to last known evacuation sector' },
     ],
 
     // 7. Verification History
@@ -100,7 +138,13 @@ export const CaseDetailPage: React.FC = () => {
     ],
 
     // 8. Audit Trail
-    auditTrail: [
+    auditTrail: liveAudit && liveAudit.length > 0 ? liveAudit.map((a: any) => ({
+      id: a._id ? `AUD-${a._id.substring(18).toUpperCase()}` : 'AUD-89210',
+      timestamp: a.timestamp ? new Date(a.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) + ' LOC' : '11 Sep 2026, 09:15:04 LOC',
+      actor: a.operator || 'OP-DISP-104',
+      action: a.action.toUpperCase().replace(/\s+/g, '_'),
+      hash: a._id ? `sha256:${a._id}e3b0c442` : 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    })) : [
       { id: 'AUD-89210', timestamp: '11 Sep 2026, 09:15:04 LOC', actor: 'OP-DISP-104', action: 'RECORD_CREATED', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
       { id: 'AUD-89214', timestamp: '11 Sep 2026, 09:28:18 LOC', actor: 'SYS-INDEX-01', action: 'INDEX_ENRICHED', hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4' },
       { id: 'AUD-89239', timestamp: '11 Sep 2026, 14:31:02 LOC', actor: 'SYS-MATCH-ENG', action: 'CORRELATION_PAIR_LINKED', hash: '3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b' },
@@ -292,28 +336,56 @@ export const CaseDetailPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                padding: 'var(--space-2)',
+                padding: caseData.photoUrl ? '0' : 'var(--space-2)',
                 flexShrink: 0,
+                overflow: 'hidden',
+                position: 'relative',
               }}>
-                <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--border-strong)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-inverse)',
-                  marginBottom: '6px',
-                }}>
-                  <User size={26} />
-                </div>
-                <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', lineHeight: 1.1 }}>
-                  REF PHOTO
-                </span>
-                <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--color-forest-text)' }}>
-                  GOV ID VERIFIED
-                </span>
+                {caseData.photoUrl ? (
+                  <>
+                    <img 
+                      src={caseData.photoUrl} 
+                      alt={caseData.name} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      padding: '2px 4px',
+                      fontSize: '8px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--color-forest-text)',
+                      textAlign: 'center'
+                    }}>
+                      LIVE PHOTO
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--border-strong)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--text-inverse)',
+                      marginBottom: '6px',
+                    }}>
+                      <User size={26} />
+                    </div>
+                    <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', lineHeight: 1.1 }}>
+                      REF PHOTO
+                    </span>
+                    <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--color-forest-text)' }}>
+                      GOV ID VERIFIED
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Subject Bio Header */}
@@ -583,7 +655,7 @@ export const CaseDetailPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {caseData.reportSources.map((src, idx) => (
+                {caseData.reportSources.map((src: any, idx: number) => (
                   <tr key={src.id} style={{ borderBottom: idx === caseData.reportSources.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '9px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{src.type}</td>
                     <td style={{ padding: '9px 14px', color: 'var(--text-secondary)' }}>{src.entity}</td>
@@ -700,7 +772,7 @@ export const CaseDetailPage: React.FC = () => {
             </div>
 
             <div style={{ padding: 'var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {caseData.timeline.map((evt, idx) => (
+              {caseData.timeline.map((evt: any, idx: number) => (
                 <div key={idx} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
                   <div style={{
                     width: '82px',
