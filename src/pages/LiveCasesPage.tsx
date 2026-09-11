@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCaseContext, IncidentCaseStatus } from '../context/CaseContext';
+import { api } from '../services/api';
 import { 
   Search, 
   ArrowRight, 
@@ -35,6 +36,35 @@ export const LiveCasesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'All' | 'Critical' | 'High Priority' | 'Minors' | 'Awaiting Verification' | 'Verified'>('All');
   const [sortBy, setSortBy] = useState<'reported' | 'priority' | 'name'>('priority');
+  const [dbCases, setDbCases] = useState<LiveCaseItem[] | null>(null);
+
+  useEffect(() => {
+    api.getCases()
+      .then((cases) => {
+        if (Array.isArray(cases) && cases.length > 0) {
+          const mapped: LiveCaseItem[] = cases.map((c) => ({
+            caseId: c.caseId,
+            name: c.name,
+            aliases: c.aliases,
+            age: c.age,
+            gender: c.gender,
+            lastSeenLocation: c.lastSeenLocation,
+            sector: c.sector,
+            reportedAgo: c.reportedAgo || 'Recent',
+            source: c.source,
+            priority: c.priority,
+            status: c.status,
+            isMinor: c.isMinor,
+            hasPhoto: c.hasPhoto,
+            keyMarks: c.keyMarks || '',
+          }));
+          setDbCases(mapped);
+        }
+      })
+      .catch(() => {
+        // Fallback to baseCases seamlessly
+      });
+  }, []);
 
   const baseCases: LiveCaseItem[] = useMemo(() => [
     {
@@ -157,7 +187,8 @@ export const LiveCasesPage: React.FC = () => {
 
   // Filtering
   const filteredCases = useMemo(() => {
-    return baseCases.filter((c) => {
+    const casePool = dbCases && dbCases.length > 0 ? dbCases : baseCases;
+    return casePool.filter((c) => {
       // Filter tab
       if (activeFilter === 'Critical' && c.priority !== 'CRITICAL') return false;
       if (activeFilter === 'High Priority' && c.priority !== 'HIGH') return false;

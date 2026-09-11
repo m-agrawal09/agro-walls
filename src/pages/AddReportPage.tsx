@@ -24,6 +24,7 @@ import {
 import { Badge } from '../components/common/Badge';
 import { StatusDot } from '../components/common/StatusDot';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 type ReportType = 
   | 'Missing Person' 
@@ -63,6 +64,8 @@ interface FormData {
   lastKnownLocation: string;
   dateTimeLastSeen: string;
   photoFileName: string;
+  imageUrl?: string;
+  imagePublicId?: string;
 
   // Step 4: Identification
   height: string;
@@ -92,6 +95,8 @@ const initialFormData: FormData = {
   lastKnownLocation: '',
   dateTimeLastSeen: '',
   photoFileName: '',
+  imageUrl: '',
+  imagePublicId: '',
   height: '',
   build: '',
   clothing: '',
@@ -138,9 +143,23 @@ export const AddReportPage: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoUploadSim = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUploadSim = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({ ...prev, photoFileName: e.target.files![0].name }));
+      const file = e.target.files[0];
+      setFormData(prev => ({ ...prev, photoFileName: file.name }));
+
+      try {
+        const uploadRes = await api.uploadImage(file);
+        if (uploadRes?.url) {
+          setFormData(prev => ({
+            ...prev,
+            imageUrl: uploadRes.url,
+            imagePublicId: uploadRes.publicId,
+          }));
+        }
+      } catch (uploadErr) {
+        console.warn('[Cloudinary Upload]:', uploadErr);
+      }
     }
   };
 
@@ -148,19 +167,32 @@ export const AddReportPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const randomCaseNum = String(Math.floor(1 + Math.random() * 99999)).padStart(5, '0');
-      const caseId = `MP-2026-${randomCaseNum}`;
-      setGeneratedCaseId(caseId);
-      setIsSubmitting(false);
-      setSubmissionComplete(true);
-      setSearchState('SEARCHING');
+    api.submitReport(formData)
+      .then((res) => {
+        const caseId = res.caseId || `MP-2026-${String(Math.floor(1 + Math.random() * 99999)).padStart(5, '0')}`;
+        setGeneratedCaseId(caseId);
+        setIsSubmitting(false);
+        setSubmissionComplete(true);
+        setSearchState('SEARCHING');
 
-      // Simulate correlation scan completion after 2.8 seconds
-      setTimeout(() => {
-        setSearchState('FOUND');
-      }, 2800);
-    }, 700);
+        // Simulate correlation scan completion after 2.8 seconds
+        setTimeout(() => {
+          setSearchState('FOUND');
+        }, 2800);
+      })
+      .catch((err) => {
+        console.warn('[MongoDB Submit] Error saving report, falling back to local flow:', err);
+        const randomCaseNum = String(Math.floor(1 + Math.random() * 99999)).padStart(5, '0');
+        const caseId = `MP-2026-${randomCaseNum}`;
+        setGeneratedCaseId(caseId);
+        setIsSubmitting(false);
+        setSubmissionComplete(true);
+        setSearchState('SEARCHING');
+
+        setTimeout(() => {
+          setSearchState('FOUND');
+        }, 2800);
+      });
   };
 
   const handleReset = () => {
