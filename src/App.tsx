@@ -8,8 +8,8 @@ import { VerificationQueuePage } from './pages/VerificationQueuePage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { DuplicateResolutionPage } from './pages/DuplicateResolutionPage';
 import { FamilyStatusPage } from './pages/FamilyStatusPage';
+import { CommunityReportsPage } from './pages/CommunityReportsPage';
 import {
-  CommunityReportsPage,
   SourceNetworkPage,
   AnalyticsPage,
   AuditTrailPage,
