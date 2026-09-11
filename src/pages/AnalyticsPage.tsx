@@ -91,6 +91,10 @@ export const AnalyticsPage: React.FC = () => {
     ];
   }, [cases]);
 
+  const handleExportSitRep = () => {
+    window.print();
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -147,7 +151,7 @@ export const AnalyticsPage: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <button
-              onClick={() => alert('Executive Situation Report generated & queued for print export.')}
+              onClick={handleExportSitRep}
               className="btn btn-secondary"
               style={{
                 display: 'inline-flex',

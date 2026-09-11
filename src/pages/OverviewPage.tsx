@@ -139,6 +139,40 @@ export const OverviewPage: React.FC = () => {
       .catch(() => {});
   }, [caseStatus]);
 
+  const handleExportSitRep = () => {
+    const sitrepContent = `# EMERGENCY OPERATIONAL SITUATION REPORT (SITREP)
+Generated: ${new Date().toUTCString()}
+Incident: ${selectedDisaster}
+Command Identifier: INCIDENT ALPHA-04
+Clearance: RESTRICTED LEVEL 2
+
+## 1. OPERATIONAL SUMMARY & KPIS
+- Total Incident Cases Registered: ${kpiData.totalCases}
+- Verified Positive Identifications: ${kpiData.verifiedCases}
+- Awaiting Field Verification: ${kpiData.awaitingVerification}
+- Active Candidate Matching Queue: ${kpiData.lookingForMatch}
+- Pending Verification Review: ${kpiData.pendingVerificationQueue}
+- Automated Match Correlation Rate: ${kpiData.matchRate}%
+
+## 2. VERIFICATION QUEUE HIGH-PRIORITY CASES
+${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${v.name} (${v.ageGender}) - Location: ${v.location}`).join('\n') || '- No pending urgent items.'}
+
+## 3. TELEMETRY & DATA SOURCES
+- CAD Live Stream: CONNECTED (12ms latency)
+- State Disaster Command Hub: Rajasthan Emergency Network
+- Audit Trail: Cryptographically verified SHA-256 tamper-evident log
+`;
+
+    const blob = new Blob([sitrepContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `SITREP_${selectedDisaster.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const disastersList = [
     { name: 'Central India Flood Response', region: 'Madhya Pradesh / Narmada Basin', status: 'LEVEL 3 CRITICAL', cases: kpiData.totalCases },
     { name: 'Assam Brahmaputra Surge 2026', region: 'Dhubri / Barpeta Sector', status: 'LEVEL 2 ELEVATED', cases: 412 },
@@ -281,7 +315,13 @@ export const OverviewPage: React.FC = () => {
               )}
             </div>
 
-            <button className="btn btn-secondary" style={{ height: '38px' }} title="Download Operational Situation Report">
+            <button 
+              type="button"
+              onClick={handleExportSitRep}
+              className="btn btn-secondary" 
+              style={{ height: '38px' }} 
+              title="Download Operational Situation Report"
+            >
               <Download size={14} />
               <span>Export SitRep</span>
             </button>

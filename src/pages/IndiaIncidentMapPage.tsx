@@ -5,7 +5,10 @@ import {
   RefreshCw,
   ExternalLink,
   Shield,
-  Activity
+  Activity,
+  X,
+  Crosshair,
+  Globe
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -521,6 +524,8 @@ export const IndiaIncidentMapPage: React.FC = () => {
   // Zoom helpers
   const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
   const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
+  const handleFocusRajasthan = () => mapInstanceRef.current?.setView([26.5, 73.8], 7, { animate: true });
+  const handleFocusIndia = () => mapInstanceRef.current?.setView([22.9734, 78.6569], 5, { animate: true });
 
   // Active metrics
   const totalCount = allIncidents.length;
@@ -682,6 +687,24 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 width: '100%'
               }}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           {/* Priority Filters */}
@@ -813,7 +836,9 @@ export const IndiaIncidentMapPage: React.FC = () => {
             gap: '6px'
           }}>
             <button
+              type="button"
               onClick={handleZoomIn}
+              title="Zoom In"
               style={{
                 width: '36px',
                 height: '36px',
@@ -833,7 +858,9 @@ export const IndiaIncidentMapPage: React.FC = () => {
               +
             </button>
             <button
+              type="button"
               onClick={handleZoomOut}
+              title="Zoom Out"
               style={{
                 width: '36px',
                 height: '36px',
@@ -851,6 +878,54 @@ export const IndiaIncidentMapPage: React.FC = () => {
               }}
             >
               −
+            </button>
+            <button
+              type="button"
+              onClick={handleFocusRajasthan}
+              title="Center on Rajasthan"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0,0,0,0.1)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                color: '#e11d48',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              }}
+            >
+              <Crosshair size={14} />
+              <span style={{ fontSize: '8px', lineHeight: 1 }}>RJ</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleFocusIndia}
+              title="View All India"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0,0,0,0.1)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                color: '#2563eb',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              }}
+            >
+              <Globe size={14} />
+              <span style={{ fontSize: '8px', lineHeight: 1 }}>IN</span>
             </button>
           </div>
 
@@ -1060,6 +1135,30 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 <span style={{ fontWeight: 600, color: '#e11d48' }}>1070 / 112 Command</span>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/cases')}
+              style={{
+                marginTop: '0.85rem',
+                width: '100%',
+                padding: '7px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-base)',
+                background: 'var(--bg-app)',
+                color: 'var(--text-primary)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>View All Cases in Table</span>
+              <ExternalLink size={12} />
+            </button>
           </div>
 
         </div>

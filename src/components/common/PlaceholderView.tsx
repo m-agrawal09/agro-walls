@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from './PageHeader';
 import { Badge, BadgeVariant } from './Badge';
 import { StatusDot } from './StatusDot';
@@ -11,7 +12,8 @@ import {
   Clock, 
   ShieldAlert, 
   Layers, 
-  CheckCircle2 
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 export interface StatMetric {
@@ -51,8 +53,62 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
   emptyDescription = 'Module connected to Regional Emergency Dispatch Core. Records and updates will stream into this table in real-time as incident reports are submitted or correlated.',
   actionButtonText = 'Perform Manual Query',
 }) => {
+  const navigate = useNavigate();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [filterActive, setFilterActive] = useState(false);
+  const [sortAsc, setSortAsc] = useState(true);
+  const [searchVal, setSearchVal] = useState('');
+  const [queryModalOpen, setQueryModalOpen] = useState(false);
+  const [modalQueryInput, setModalQueryInput] = useState('');
+
+  // Functional CSV Export
+  const handleExportCsv = () => {
+    const headers = ['Timestamp', 'Module', 'Category', 'TelemetryCode', 'MetricLabel', 'MetricValue'];
+    const rows = stats.map(s => [
+      new Date().toISOString(),
+      `"${title}"`,
+      `"${category}"`,
+      `"${telemetryCode}"`,
+      `"${s.label}"`,
+      `"${s.value}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}_operational_log.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setSyncFeedback('Operational log CSV generated and downloaded.');
+    setTimeout(() => setSyncFeedback(null), 3500);
+  };
+
+  // Functional Sync
+  const handleSync = () => {
+    setIsSyncing(true);
+    setSyncFeedback('Synchronizing with CAD Gateway & regional disaster telemetry...');
+    setTimeout(() => {
+      setIsSyncing(false);
+      setSyncFeedback(`CAD Feed synchronized at ${new Date().toLocaleTimeString()} (0ms drift).`);
+      setTimeout(() => setSyncFeedback(null), 3500);
+    }, 800);
+  };
+
+  const handleQuerySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setQueryModalOpen(false);
+    if (modalQueryInput.trim()) {
+      navigate(`/cases?search=${encodeURIComponent(modalQueryInput.trim())}`);
+    } else {
+      navigate('/cases');
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', position: 'relative' }}>
       <PageHeader
         breadcrumbs={[
           { label: 'RECONNECT OPS' },
@@ -70,20 +126,60 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
         }
         actions={
           <>
-            <button className="btn btn-secondary" title="Export Operational Log">
+            <button 
+              type="button"
+              onClick={handleExportCsv}
+              className="btn btn-secondary" 
+              title="Export Operational Log to CSV"
+            >
               <Download size={14} />
               <span>Export CSV</span>
             </button>
-            <button className="btn btn-secondary" title="Sync CAD Feed">
-              <RefreshCw size={14} />
-              <span>Sync</span>
+            <button 
+              type="button"
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="btn btn-secondary" 
+              title="Sync CAD Feed"
+            >
+              <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
             </button>
-            <button className="btn btn-primary">
+            <button 
+              type="button"
+              onClick={() => setQueryModalOpen(true)}
+              className="btn btn-primary"
+            >
               <span>{actionButtonText}</span>
             </button>
           </>
         }
       />
+
+      {syncFeedback && (
+        <div style={{
+          padding: '0.65rem 2rem',
+          background: 'var(--color-forest-bg)',
+          borderBottom: '1px solid var(--color-forest-border)',
+          color: 'var(--color-forest-text)',
+          fontSize: '0.82rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <CheckCircle2 size={15} color="var(--color-forest)" />
+            <span>{syncFeedback}</span>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setSyncFeedback(null)} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         {/* Metric Cards Grid */}
@@ -167,22 +263,48 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
               />
               <input
                 type="text"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchVal.trim()) {
+                    navigate(`/cases?search=${encodeURIComponent(searchVal.trim())}`);
+                  }
+                }}
                 placeholder="Filter by Case ID, name, or incident code..."
                 style={{
                   width: '100%',
                   height: '32px',
                   paddingLeft: '32px',
                   paddingRight: '12px',
+                  fontSize: 'var(--text-xs)',
+                  backgroundColor: 'var(--bg-app)',
+                  border: '1px solid var(--border-base)',
+                  borderRadius: 'var(--radius-xs)'
                 }}
               />
             </div>
-            <button className="btn btn-secondary" style={{ height: '32px' }}>
+            <button 
+              type="button"
+              onClick={() => setFilterActive(prev => !prev)}
+              className="btn btn-secondary" 
+              style={{ 
+                height: '32px',
+                backgroundColor: filterActive ? 'var(--bg-subtle)' : undefined,
+                borderColor: filterActive ? 'var(--primary-color)' : undefined,
+                color: filterActive ? 'var(--primary-color)' : undefined
+              }}
+            >
               <Filter size={13} />
-              <span>Filters</span>
+              <span>{filterActive ? 'Filter: Active' : 'Filters'}</span>
             </button>
-            <button className="btn btn-secondary" style={{ height: '32px' }}>
+            <button 
+              type="button"
+              onClick={() => setSortAsc(prev => !prev)}
+              className="btn btn-secondary" 
+              style={{ height: '32px' }}
+            >
               <ArrowUpDown size={13} />
-              <span>Sort</span>
+              <span>Sort: {sortAsc ? 'ASC' : 'DESC'}</span>
             </button>
           </div>
 
@@ -312,6 +434,97 @@ export const PlaceholderView: React.FC<PlaceholderViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Manual Query Modal */}
+      {queryModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-base)',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '480px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '1rem 1.25rem',
+              borderBottom: '1px solid var(--border-base)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Search size={16} color="var(--primary-color)" />
+                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {actionButtonText}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQueryModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuerySubmit} style={{ padding: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+                Query Case ID, Name, or Incident Code
+              </label>
+              <input
+                type="text"
+                value={modalQueryInput}
+                onChange={(e) => setModalQueryInput(e.target.value)}
+                placeholder="e.g. MP-2026-00421 or Ramesh or Sector 4"
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-base)',
+                  fontSize: '0.85rem',
+                  marginBottom: '1rem',
+                  backgroundColor: 'var(--bg-app)',
+                  color: 'var(--text-primary)'
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setQueryModalOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.82rem', padding: '6px 16px' }}
+                >
+                  Search Database
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

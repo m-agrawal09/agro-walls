@@ -34,6 +34,17 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  const [headerSearch, setHeaderSearch] = useState('');
+
+  const handleHeaderSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (headerSearch.trim()) {
+      navigate(`/cases?search=${encodeURIComponent(headerSearch.trim())}`);
+    } else {
+      navigate('/cases');
+    }
+  };
+
   return (
     <header
       style={{
@@ -105,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
         maxWidth: '520px',
         margin: '0 var(--space-4)',
       }}>
-        <div style={{ position: 'relative', width: '100%' }}>
+        <form onSubmit={handleHeaderSearch} style={{ position: 'relative', width: '100%' }}>
           <Search
             size={14}
             style={{
@@ -119,6 +130,8 @@ export const Header: React.FC<HeaderProps> = ({
           />
           <input
             type="text"
+            value={headerSearch}
+            onChange={(e) => setHeaderSearch(e.target.value)}
             placeholder="Search Case ID (RC-2026-XXXX), Person Name, or Location..."
             style={{
               width: '100%',
@@ -130,23 +143,26 @@ export const Header: React.FC<HeaderProps> = ({
               borderColor: 'var(--border-subtle)',
             }}
           />
-          <div style={{
-            position: 'absolute',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            fontSize: 'var(--text-xs)',
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--text-muted)',
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            padding: '1px 5px',
-            borderRadius: 'var(--radius-xs)',
-            pointerEvents: 'none',
-          }}>
-            /
-          </div>
-        </div>
+          <button
+            type="submit"
+            style={{
+              position: 'absolute',
+              right: '6px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              fontSize: 'var(--text-xs)',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--text-muted)',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-subtle)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-xs)',
+              cursor: 'pointer',
+            }}
+          >
+            Enter ↵
+          </button>
+        </form>
       </div>
 
       {/* Right Area: Telemetry Clocks, CAD status, Action */}

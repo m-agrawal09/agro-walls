@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCaseContext, IncidentCaseStatus } from '../context/CaseContext';
 import { api } from '../services/api';
 import { 
@@ -31,12 +31,21 @@ interface LiveCaseItem {
 
 export const LiveCasesPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || searchParams.get('q') || '';
   const { caseStatus, priority: contextPriority } = useCaseContext();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [activeFilter, setActiveFilter] = useState<'All' | 'Critical' | 'High Priority' | 'Minors' | 'Awaiting Verification' | 'Verified'>('All');
   const [sortBy, setSortBy] = useState<'reported' | 'priority' | 'name'>('priority');
   const [dbCases, setDbCases] = useState<LiveCaseItem[] | null>(null);
+
+  useEffect(() => {
+    const paramSearch = searchParams.get('search') || searchParams.get('q');
+    if (paramSearch !== null && paramSearch !== undefined) {
+      setSearchQuery(paramSearch);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     api.getCases()
