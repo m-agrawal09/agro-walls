@@ -4,9 +4,9 @@ import { AppShell } from './components/layout/AppShell';
 import { OverviewPage } from './pages/OverviewPage';
 import { AddReportPage } from './pages/AddReportPage';
 import { MatchIntelligencePage } from './pages/MatchIntelligencePage';
+import { VerificationQueuePage } from './pages/VerificationQueuePage';
 import {
   LiveCasesPage,
-  VerificationQueuePage,
   DuplicateResolutionPage,
   CommunityReportsPage,
   SourceNetworkPage,
