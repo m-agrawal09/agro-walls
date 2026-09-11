@@ -53,11 +53,12 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
   onReportCreated,
   onSwitchToManual
 }) => {
+  const [selectedLanguage, setSelectedLanguage] = useState<'hi' | 'en' | 'hinglish'>('hi');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-1',
       sender: 'bot',
-      text: 'Namaste & Welcome. I am your Emergency Intake Assistant powered by AI. You can speak or write in Hindi (हिन्दी) or English. Please describe the person you want to report—such as their name, where they were last seen, and your contact phone number.',
+      text: 'नमस्ते! मैं आपका आपदा राहत सहायक हूँ। कृपया उस व्यक्ति की जानकारी दें जिसकी आप रिपोर्ट दर्ज करना चाहते हैं—जैसे उनका पूरा नाम, वे कहाँ से लापता हुए या कहाँ मिले, और आपका संपर्क फ़ोन नंबर क्या है? आप बोलकर (माइक द्वारा) या नीचे लिखकर बता सकते हैं।',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -75,7 +76,6 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
     'Gender or Age'
   ]);
   const [isComplete, setIsComplete] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<'auto' | 'hi' | 'en'>('auto');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +83,44 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
   const [submittedReportId, setSubmittedReportId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [speechActive, setSpeechActive] = useState(false);
+
+  // Switch language mode & prompt user for details in that language
+  const handleSelectLanguage = (lang: 'hi' | 'en' | 'hinglish') => {
+    setSelectedLanguage(lang);
+
+    let promptQuestion = '';
+    if (lang === 'hi') {
+      promptQuestion = 'नमस्ते! मैं आपका आपदा राहत सहायक हूँ। कृपया उस व्यक्ति की जानकारी दें जिसकी आप रिपोर्ट दर्ज करना चाहते हैं—जैसे उनका पूरा नाम, वे कहाँ से लापता हुए, उनकी उम्र या लिंग, और आपका संपर्क फ़ोन नंबर क्या है? आप माइक से बोलकर या नीचे लिखकर बता सकते हैं।';
+    } else if (lang === 'hinglish') {
+      promptQuestion = 'Namaste! Main aapka Disaster Relief Assistant hoon. Kripya us vyakti ki details batayein jinki report aap likhwana chahte hain—jaise unka pura naam kya hai, wo aakhiri baar kahan dekhe gaye the, unki umar, aur aapka contact phone number kya hai? Aap bol kar ya type karke bata sakte hain.';
+    } else {
+      promptQuestion = 'Hello! I am your Emergency Disaster Intake Assistant. Please provide the details of the person you wish to report—such as their full name, where they were last seen or found, their approximate age/gender, and your contact phone number. You can speak using the microphone or type below.';
+    }
+
+    // Clear all previous slots so no previous report is registered
+    setExtractedData({
+      reportType: 'Missing Person',
+      urgencyLevel: 'HIGH'
+    });
+    setMissingFields([
+      'Person Full Name',
+      'Last Known Location',
+      'Contact Phone Number',
+      'Gender or Age'
+    ]);
+    setIsComplete(false);
+    setSubmittedCaseId(null);
+    setSubmittedReportId(null);
+
+    setMessages([
+      {
+        id: `lang-welcome-${Date.now()}`,
+        sender: 'bot',
+        text: promptQuestion,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  };
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -303,11 +341,20 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
 
   // Reset conversation
   const handleReset = () => {
+    let resetPrompt = '';
+    if (selectedLanguage === 'hi') {
+      resetPrompt = 'बातचीत रीसेट कर दी गई है। कृपया उस व्यक्ति की जानकारी दें—जैसे उनका पूरा नाम, वे कहाँ से लापता हुए या मिले, उनकी आयु या लिंग, और आपका संपर्क नंबर?';
+    } else if (selectedLanguage === 'hinglish') {
+      resetPrompt = 'Conversation reset ho gaya hai. Kripya us vyakti ka pura naam, last seen location, age/gender aur apna contact phone number batayein.';
+    } else {
+      resetPrompt = 'Conversation reset. Please provide the person’s full name, last known location, age/gender, and your contact phone number.';
+    }
+
     setMessages([
       {
-        id: 'welcome-reset',
+        id: `welcome-reset-${Date.now()}`,
         sender: 'bot',
-        text: 'Conversation reset. Please describe the person in Hindi or English (Voice or Text).',
+        text: resetPrompt,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -326,22 +373,31 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
     setSubmittedReportId(null);
   };
 
-  // Sample prompt chips
-  const samplePrompts = [
+  // Conversational Intent Starters (Prompts assistant to actively interview user instead of submitting hardcoded data)
+  const actionStarters = [
     {
-      lang: 'hi',
-      title: 'लापता व्यक्ति (Hindi)',
-      text: 'मेरा भाई रमेश शर्मा कल शाम से सेक्टर 4 रिलीफ कैंप से लापता है, उम्र 28 साल है, उसने नीली शर्ट पहनी थी, मेरा फोन 9876543210 है।'
+      title: '🚨 लापता व्यक्ति (Report Missing)',
+      text: selectedLanguage === 'hi' 
+        ? 'मुझे एक नए लापता व्यक्ति की रिपोर्ट दर्ज करवानी है।'
+        : selectedLanguage === 'hinglish'
+        ? 'Mujhe ek missing person ki report darj karwani hai.'
+        : 'I want to report a missing person.'
     },
     {
-      lang: 'en',
-      title: 'Found Child (English)',
-      text: 'I found an 8-year-old unaccompanied boy named Rohan near Sector B-4 shelter. He is wearing yellow shorts. My contact is 9811223344.'
+      title: '🤝 मिला हुआ व्यक्ति (Report Found)',
+      text: selectedLanguage === 'hi'
+        ? 'मुझे एक मिला हुआ या बचाया गया व्यक्ति मिला है।'
+        : selectedLanguage === 'hinglish'
+        ? 'Mujhe ek mila hua vyakti mila hai.'
+        : 'I have found an unaccompanied or rescued person.'
     },
     {
-      lang: 'hi',
-      title: 'अस्पताल भर्ती (Hinglish)',
-      text: 'District Hospital me ek 45 saal ki mahila admit hui hai jo apna naam Anita bata rahi hai. Contact: 9425109822.'
+      title: '🏥 अस्पताल भर्ती (Hospital Intake)',
+      text: selectedLanguage === 'hi'
+        ? 'अस्पताल में भर्ती किसी व्यक्ति की रिपोर्ट दर्ज करनी है।'
+        : selectedLanguage === 'hinglish'
+        ? 'Hospital me admit vyakti ki report darj karni hai.'
+        : 'I want to report a patient admitted to a triage facility.'
     }
   ];
 
@@ -545,27 +601,11 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
             <div style={{ display: 'flex', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', borderRadius: '6px', padding: '2px' }}>
               <button
                 type="button"
-                onClick={() => setSelectedLanguage('auto')}
+                onClick={() => handleSelectLanguage('hi')}
                 style={{
-                  padding: '4px 8px',
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  background: selectedLanguage === 'auto' ? 'var(--primary-color)' : 'transparent',
-                  color: selectedLanguage === 'auto' ? '#ffffff' : 'var(--text-secondary)'
-                }}
-              >
-                Auto / Mix
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedLanguage('hi')}
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -573,15 +613,15 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
                   color: selectedLanguage === 'hi' ? '#ffffff' : 'var(--text-secondary)'
                 }}
               >
-                हिन्दी
+                हिन्दी (Hindi)
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedLanguage('en')}
+                onClick={() => handleSelectLanguage('en')}
                 style={{
-                  padding: '4px 8px',
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -590,6 +630,22 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
                 }}
               >
                 English
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectLanguage('hinglish')}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  background: selectedLanguage === 'hinglish' ? 'var(--primary-color)' : 'transparent',
+                  color: selectedLanguage === 'hinglish' ? '#ffffff' : 'var(--text-secondary)'
+                }}
+              >
+                Hinglish
               </button>
             </div>
 
@@ -739,13 +795,13 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
           <div ref={chatBottomRef} />
         </div>
 
-        {/* Quick Suggestion Prompt Chips */}
+        {/* Quick Suggestion Action Starters */}
         {messages.length <= 3 && (
           <div style={{ padding: '0.5rem 1rem', background: 'var(--bg-app)', borderTop: '1px solid var(--border-base)', display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', alignSelf: 'center' }}>
-              Quick Try:
+              Report Type:
             </span>
-            {samplePrompts.map((p, idx) => (
+            {actionStarters.map((p, idx) => (
               <button
                 key={idx}
                 type="button"
