@@ -563,48 +563,40 @@ export const IndiaIncidentMapPage: React.FC = () => {
         }}>
           <div>
             <h1 style={{
-              fontSize: '1.5rem',
-              fontWeight: 700,
+              fontSize: '1.65rem',
+              fontWeight: 650,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.025em',
               margin: 0,
               display: 'flex',
               alignItems: 'center',
               gap: '0.65rem'
             }}>
-              <span>Rajasthan Live Incident Map</span>
-              <span style={{
-                background: 'rgba(225, 29, 72, 0.1)',
-                color: '#e11d48',
-                border: '1px solid rgba(225, 29, 72, 0.3)',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '12px'
-              }}>
-                STATE BORDER HIGHLIGHTED
-              </span>
+              <span>Rajasthan Incident Map</span>
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>
-              Filled with all Indian Cities data • {totalRjCitiesCount} Rajasthan Cities & Districts • Live Database Connected
+            <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>
+              Live field tracking across {totalRjCitiesCount} districts and relief centers
             </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '6px 12px',
-              backgroundColor: 'var(--bg-app)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '6px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.75rem',
-              color: 'var(--text-secondary)'
-            }}>
+            <div 
+              title={`Last updated: ${lastSyncTime}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '7px 14px',
+                backgroundColor: 'var(--bg-app)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '6px',
+                fontSize: '0.84rem',
+                fontWeight: 550,
+                color: 'var(--text-secondary)'
+              }}
+            >
               <StatusDot variant="forest" pulse size={7} />
-              <span>LIVE MONGODB SYNC ({lastSyncTime})</span>
+              <span>Live</span>
             </div>
 
             <button
@@ -614,12 +606,12 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: '6px 12px',
+                padding: '7px 14px',
                 borderRadius: '6px',
                 border: '1px solid var(--border-base)',
                 background: 'var(--bg-surface)',
                 color: 'var(--text-primary)',
-                fontSize: '0.8rem',
+                fontSize: '0.88rem',
                 fontWeight: 600,
                 cursor: 'pointer'
               }}
@@ -634,17 +626,17 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                padding: '6px 14px',
+                padding: '7px 16px',
                 borderRadius: '6px',
                 border: 'none',
                 background: 'var(--primary-color)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.88rem',
                 fontWeight: 600,
                 cursor: 'pointer'
               }}
             >
-              <MapPin size={14} />
+              <MapPin size={15} />
               <span>+ Add Report</span>
             </button>
           </div>
@@ -682,7 +674,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 border: 'none',
                 background: 'transparent',
                 outline: 'none',
-                fontSize: '0.82rem',
+                fontSize: '0.9rem',
                 color: 'var(--text-primary)',
                 width: '100%'
               }}
@@ -708,20 +700,20 @@ export const IndiaIncidentMapPage: React.FC = () => {
           </div>
 
           {/* Priority Filters */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Priority:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Priority:</span>
             {(['ALL', 'CRITICAL', 'HIGH', 'ROUTINE'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => setFilterPriority(p)}
                 style={{
-                  padding: '4px 10px',
+                  padding: '5px 12px',
                   borderRadius: '6px',
                   border: filterPriority === p ? '1px solid var(--primary-color)' : '1px solid var(--border-base)',
                   background: filterPriority === p ? 'var(--primary-color)' : 'var(--bg-surface)',
                   color: filterPriority === p ? '#ffffff' : 'var(--text-secondary)',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  fontWeight: 650,
                   cursor: 'pointer'
                 }}
               >
@@ -777,17 +769,17 @@ export const IndiaIncidentMapPage: React.FC = () => {
               animation: 'pulse 1.5s infinite'
             }} />
             <span style={{
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              fontFamily: 'monospace',
-              letterSpacing: '0.04em',
+              fontSize: '0.88rem',
+              fontWeight: 650,
+              fontFamily: 'var(--font-sans)',
+              letterSpacing: '-0.01em',
               color: '#1e293b'
             }}>
-              LIVE • {totalCount} REPORTS
+              Live • {totalCount} Reports
             </span>
           </div>
 
-          {/* TOP-RIGHT TILE LAYER SWITCHER (Matching Screenshot: STREETS | DARK | SATELLITE - NO WATERMARKS) */}
+          {/* TOP-RIGHT TILE LAYER SWITCHER */}
           <div style={{
             position: 'absolute',
             top: '16px',
@@ -810,17 +802,16 @@ export const IndiaIncidentMapPage: React.FC = () => {
                   border: 'none',
                   borderRadius: '6px',
                   padding: '6px 12px',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.04em',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
                   cursor: 'pointer',
                   background: tileTheme === theme ? '#2563eb' : 'transparent',
                   color: tileTheme === theme ? '#ffffff' : '#64748b',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.15s'
                 }}
               >
-                {theme}
+                {theme === 'STREETS' ? 'Street' : theme === 'DARK' ? 'Dark' : 'Satellite'}
               </button>
             ))}
           </div>
@@ -929,7 +920,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
             </button>
           </div>
 
-          {/* BOTTOM BAR (ACTIVE | HIGH RISK | HOTSPOTS) */}
+          {/* BOTTOM BAR */}
           <div style={{
             position: 'absolute',
             bottom: 0,
@@ -938,23 +929,23 @@ export const IndiaIncidentMapPage: React.FC = () => {
             zIndex: 1000,
             background: 'rgba(255, 255, 255, 0.95)',
             borderTop: '1px solid var(--border-base)',
-            padding: '8px 20px',
+            padding: '9px 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-around',
-            fontFamily: 'monospace',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            color: '#475569'
+            fontFamily: 'var(--font-sans)',
+            fontSize: '0.88rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)'
           }}>
             <div>
-              ACTIVE: <span style={{ color: '#2563eb' }}>{totalCount}</span>
+              Active: <span style={{ color: '#2563eb', fontWeight: 700 }}>{totalCount}</span>
             </div>
             <div>
-              HIGH RISK: <span style={{ color: '#dc2626' }}>{criticalCount}</span>
+              High Risk: <span style={{ color: '#dc2626', fontWeight: 700 }}>{criticalCount}</span>
             </div>
             <div>
-              HOTSPOTS: <span style={{ color: '#e11d48' }}>{totalRjCitiesCount} CITIES</span>
+              Districts: <span style={{ color: '#e11d48', fontWeight: 700 }}>{totalRjCitiesCount} Hubs</span>
             </div>
           </div>
 
@@ -976,14 +967,14 @@ export const IndiaIncidentMapPage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <Activity size={16} color="var(--primary-color)" />
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                   Selected Case Dossier
                 </h3>
               </div>
               {selectedCase && (
                 <button
                   onClick={() => setSelectedCase(null)}
-                  style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ fontSize: '0.78rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   Clear
                 </button>
@@ -991,35 +982,36 @@ export const IndiaIncidentMapPage: React.FC = () => {
             </div>
 
             {selectedCase ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   {selectedCase.photoUrl ? (
                     <img
                       src={selectedCase.photoUrl}
                       alt={selectedCase.name}
-                      style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-base)' }}
+                      style={{ width: '52px', height: '52px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-base)' }}
                     />
                   ) : (
                     <div style={{
-                      width: '48px',
-                      height: '48px',
+                      width: '52px',
+                      height: '52px',
                       borderRadius: '8px',
                       background: 'rgba(2, 132, 199, 0.1)',
                       color: 'var(--primary-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontWeight: 700
+                      fontWeight: 700,
+                      fontSize: '1.05rem'
                     }}>
                       {selectedCase.name?.slice(0, 2).toUpperCase()}
                     </div>
                   )}
 
                   <div>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                    <h4 style={{ fontSize: '1.12rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                       {selectedCase.name}
                     </h4>
-                    <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
                       {selectedCase.caseId}
                     </div>
                   </div>
@@ -1037,11 +1029,11 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 <div style={{
                   background: 'var(--bg-app)',
                   borderRadius: '8px',
-                  padding: '0.75rem',
-                  fontSize: '0.8rem',
+                  padding: '0.85rem',
+                  fontSize: '0.88rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.4rem',
+                  gap: '0.45rem',
                   border: '1px solid var(--border-subtle)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1075,12 +1067,12 @@ export const IndiaIncidentMapPage: React.FC = () => {
                 <button
                   onClick={() => navigate(`/cases/${selectedCase.caseId}`)}
                   style={{
-                    padding: '0.65rem',
+                    padding: '0.75rem',
                     borderRadius: '6px',
                     border: 'none',
                     background: 'var(--primary-color)',
                     color: '#ffffff',
-                    fontSize: '0.82rem',
+                    fontSize: '0.9rem',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
@@ -1112,25 +1104,25 @@ export const IndiaIncidentMapPage: React.FC = () => {
             boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <Shield size={16} color="#e11d48" />
-              <h3 style={{ fontSize: '0.92rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              <Shield size={18} color="#e11d48" />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                 Rajasthan State Command
               </h3>
             </div>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
-              Official administrative boundary highlighted with blue/cyan luminescence. Outer national zones are masked with ambient darkness to isolate field triage.
+            <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
+              State disaster response zone covering {totalRjCitiesCount} administrative hubs and field triage sectors.
             </p>
 
-            <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+            <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Mapped Cities:</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{totalRjCitiesCount} Rajasthan Hubs</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Response Units:</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>SDRF 1st Bn & NDRF 6th Bn</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Disaster Helpline:</span>
                 <span style={{ fontWeight: 600, color: '#e11d48' }}>1070 / 112 Command</span>
               </div>
@@ -1140,14 +1132,14 @@ export const IndiaIncidentMapPage: React.FC = () => {
               type="button"
               onClick={() => navigate('/cases')}
               style={{
-                marginTop: '0.85rem',
+                marginTop: '0.95rem',
                 width: '100%',
-                padding: '7px 12px',
+                padding: '8px 14px',
                 borderRadius: '6px',
                 border: '1px solid var(--border-base)',
                 background: 'var(--bg-app)',
                 color: 'var(--text-primary)',
-                fontSize: '0.78rem',
+                fontSize: '0.86rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
@@ -1157,7 +1149,7 @@ export const IndiaIncidentMapPage: React.FC = () => {
               }}
             >
               <span>View All Cases in Table</span>
-              <ExternalLink size={12} />
+              <ExternalLink size={13} />
             </button>
           </div>
 

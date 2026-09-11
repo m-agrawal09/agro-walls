@@ -257,33 +257,17 @@ export const LiveCasesPage: React.FC = () => {
           gap: 'var(--space-4)',
         }}>
           <div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '11px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}>
-              <span>OPERATIONS</span>
-              <span>•</span>
-              <span>LIVE REGISTRY</span>
-              <span>•</span>
-              <span style={{ color: 'var(--color-crimson-text)', fontWeight: 600 }}>DISASTER ZONE ACTIVE</span>
-            </div>
             <h1 style={{
-              fontSize: 'var(--text-2xl)',
+              fontSize: '26px',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
-              margin: '2px 0 0 0',
+              letterSpacing: '-0.025em',
+              margin: 0,
             }}>
-              Live Cases Tracking Board
+              Live Cases
             </h1>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-              Centralized disaster registry across Regional CAD 911, Emergency Shelters, and Citizen Intakes.
+            <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)', margin: '3px 0 0 0' }}>
+              Active missing person tracking and case status.
             </p>
           </div>
 
@@ -297,11 +281,13 @@ export const LiveCasesPage: React.FC = () => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
+                fontSize: '13px',
+                height: '36px',
+                borderRadius: '7px',
                 padding: '7px 14px',
               }}
             >
-              <PlusCircle size={14} />
+              <PlusCircle size={15} />
               <span>Intake New Report</span>
             </button>
           </div>

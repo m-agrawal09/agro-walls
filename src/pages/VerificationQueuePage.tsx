@@ -508,99 +508,58 @@ export const VerificationQueuePage: React.FC = () => {
           gap: 'var(--space-3)',
         }}>
           <div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              fontSize: '11px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              marginBottom: '2px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}>
-              <span>HUMAN-IN-THE-LOOP TRIAGE WORKSPACE</span>
-              <span>/</span>
-              <span>VERIFICATION QUEUE</span>
-            </div>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <h1 style={{
-                fontSize: 'var(--text-xl)',
-                fontWeight: 600,
+                fontSize: '26px',
+                fontWeight: 700,
                 color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
+                letterSpacing: '-0.025em',
               }}>
                 Verification Queue
               </h1>
               <Badge variant="amber">
-                {filteredCases.length} CASES IN ACTIVE QUEUE
+                {filteredCases.length} Pending
               </Badge>
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
-                Authorized dispatchers review evidence before family notification.
-              </span>
             </div>
+            <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Review candidate matches before confirming identity.
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
+              fontSize: '13px',
+              fontWeight: 550,
               color: 'var(--text-secondary)',
               backgroundColor: 'var(--bg-app)',
-              padding: '4px 10px',
+              padding: '5px 12px',
               border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: '6px',
             }}>
               <StatusDot variant="forest" pulse size={6} />
-              <span>DISPATCH DESK: TIER-2 ACTIVE</span>
+              <span>Queue Active</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mandatory Top Emergency Operations Disclaimer */}
+      {/* Verification Notice */}
       <div
         style={{
           backgroundColor: 'var(--color-amber-bg)',
           borderBottom: '1px solid var(--color-amber-border)',
-          padding: 'var(--space-3) var(--space-8)',
+          padding: '10px 32px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 'var(--space-2)',
+          gap: '10px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 'var(--text-xs)',
-            fontWeight: 700,
-            color: 'var(--color-amber-text)',
-            letterSpacing: '0.04em',
-            backgroundColor: 'var(--bg-surface)',
-            padding: '2px 8px',
-            borderRadius: 'var(--radius-xs)',
-            border: '1px solid var(--color-amber-border)',
-          }}>
-            <StatusDot variant="amber" pulse size={7} />
-            <span>HUMAN VERIFICATION REQUIRED</span>
-          </div>
-
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-amber-text)' }}>
-            No automated match may trigger family notification, medical discharge, or record closure without sworn dispatcher confirmation.
-          </span>
-        </div>
-
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--color-amber-text)', opacity: 0.85 }}>
-          STANDARD: DISASTER-HUMAN-SIG-V2
+        <StatusDot variant="amber" pulse size={6} />
+        <span style={{ fontSize: '13px', color: 'var(--color-amber-text)', fontWeight: 550 }}>
+          Human confirmation is required before notifying family or closing a missing case.
         </span>
       </div>
 

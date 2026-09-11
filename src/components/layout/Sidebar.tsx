@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { navigationConfig } from '../../routes/navigationConfig';
 import { Badge } from '../common/Badge';
 import { StatusDot } from '../common/StatusDot';
+import { Shield } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,87 +16,66 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     <aside
       style={{
         width: isOpen ? 'var(--sidebar-width)' : 'var(--sidebar-width-collapsed)',
-        backgroundColor: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border-base)',
+        backgroundColor: 'rgba(255, 255, 255, 0.42)',
+        backdropFilter: 'blur(24px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(150%)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.52)',
+        boxShadow: '4px 0 24px rgba(76, 117, 186, 0.08)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        transition: 'width 0.15s ease-in-out',
+        transition: 'width 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
         userSelect: 'none',
         overflow: 'hidden',
         zIndex: 40,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
       }}
     >
       {/* Brand Header */}
       <div
         style={{
-          padding: isOpen ? 'var(--space-3) var(--space-4)' : 'var(--space-3)',
-          borderBottom: '1px solid var(--border-base)',
-          backgroundColor: 'transparent',
+          padding: isOpen ? '0 16px' : '0 12px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.45)',
           display: 'flex',
           alignItems: 'center',
-          gap: 'var(--space-3)',
+          gap: '10px',
+          height: 'var(--header-height)',
           minHeight: 'var(--header-height)',
         }}
       >
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 2px 6px rgba(18, 20, 23, 0.15)',
+          }}
+        >
+          <Shield size={16} strokeWidth={2.4} />
+        </div>
+
         {isOpen && (
           <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-              <span
-                style={{
-                  fontSize: 'var(--text-md)',
-                  fontWeight: 700,
-                  letterSpacing: '0.02em',
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.1,
-                }}
-              >
-                RECONNECT
-              </span>
-            </div>
             <span
               style={{
-                fontSize: '9px',
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                fontFamily: 'var(--font-mono)',
-                whiteSpace: 'nowrap',
+                fontFamily: 'var(--font-display)',
+                fontSize: '16.5px',
+                fontWeight: 700,
+                letterSpacing: '-0.025em',
+                color: 'var(--text-primary)',
+                lineHeight: 1.15,
               }}
             >
-              Coordination Network
+              Reconnect
             </span>
           </div>
         )}
       </div>
-
-      {/* Incident Status Banner */}
-      {isOpen && (
-        <div
-          style={{
-            padding: 'var(--space-2) var(--space-4)',
-            backgroundColor: 'var(--bg-app)',
-            borderBottom: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: 'var(--text-xs)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <StatusDot variant="forest" pulse size={6} />
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              DISPATCH CAD-CORE
-            </span>
-          </div>
-          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-forest-text)', fontSize: '10px' }}>
-            ACTIVE
-          </span>
-        </div>
-      )}
 
       {/* Navigation Sections */}
       <div
@@ -103,27 +83,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          padding: 'var(--space-3) 0',
+          padding: '12px 0',
         }}
       >
         {navigationConfig.map((section, sIndex) => (
           <div
             key={sIndex}
             style={{
-              marginBottom: 'var(--space-4)',
+              marginBottom: '16px',
             }}
           >
             {isOpen ? (
               <div
                 style={{
-                  padding: 'var(--space-1) var(--space-4)',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
+                  padding: '4px 16px',
+                  fontSize: '12px',
+                  fontWeight: 650,
+                  letterSpacing: '0.01em',
                   color: 'var(--text-muted)',
-                  textTransform: 'uppercase',
-                  fontFamily: 'var(--font-mono)',
-                  marginBottom: 'var(--space-1)',
+                  fontFamily: 'var(--font-sans)',
+                  marginBottom: '4px',
                 }}
               >
                 {section.title}
@@ -131,13 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             ) : (
               <div
                 style={{
-                  margin: 'var(--space-2) var(--space-2)',
-                  borderTop: '1px solid var(--border-subtle)',
+                  margin: '8px 12px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.4)',
                 }}
               />
             )}
 
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {section.items.map((item) => {
                 const IconComponent = item.icon;
                 const isActive = location.pathname === item.path || 
@@ -147,24 +126,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   <NavLink
                     key={item.id}
                     to={item.path}
-                    title={!isOpen ? `${item.label} (${item.description})` : undefined}
+                    title={!isOpen ? item.label : undefined}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: isOpen ? 'space-between' : 'center',
-                      padding: isOpen ? '7px 16px' : '9px 0',
-                      backgroundColor: isActive ? 'var(--bg-surface-active)' : 'transparent',
+                      margin: '1px 8px',
+                      padding: isOpen ? '7px 12px' : '8px 0',
+                      borderRadius: '7px',
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.68)' : 'transparent',
                       color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                       fontWeight: isActive ? 600 : 500,
-                      fontSize: 'var(--text-sm)',
-                      borderLeft: isActive ? '3px solid var(--color-charcoal-900)' : '3px solid transparent',
+                      fontSize: '14px',
+                      fontFamily: 'var(--font-sans)',
+                      letterSpacing: '-0.01em',
                       textDecoration: 'none',
                       position: 'relative',
-                      transition: 'background-color 0.1s ease',
+                      boxShadow: isActive ? '0 1px 3px rgba(76, 117, 186, 0.12)' : 'none',
+                      transition: 'all 0.12s ease',
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)';
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.45)';
                         e.currentTarget.style.color = 'var(--text-primary)';
                       }
                     }}
@@ -179,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 'var(--space-3)',
+                        gap: '10px',
                         minWidth: 0,
                       }}
                     >
@@ -216,8 +199,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                           position: 'absolute',
                           top: 4,
                           right: 8,
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           borderRadius: '50%',
                           backgroundColor:
                             item.badge.variant === 'crimson'
@@ -236,56 +219,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         ))}
       </div>
 
-      {/* Footer / System Health info */}
+      {/* Footer / System status */}
       <div
         style={{
-          padding: isOpen ? 'var(--space-3) var(--space-4)' : 'var(--space-3) var(--space-2)',
-          borderTop: '1px solid var(--border-base)',
-          backgroundColor: 'var(--bg-app)',
+          padding: isOpen ? '12px 16px' : '12px 8px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.45)',
+          backgroundColor: 'transparent',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-1)',
+          alignItems: 'center',
+          justifyContent: isOpen ? 'space-between' : 'center',
         }}
       >
         {isOpen ? (
           <>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: 'var(--text-muted)',
-              }}
-            >
-              <span>NODE-US-EAST-02</span>
-              <span style={{ color: 'var(--color-forest-text)' }}>ONLINE</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <StatusDot variant="forest" pulse size={7} />
+              <span
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 550,
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                Operational
+              </span>
             </div>
-            <div
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: '12px',
                 color: 'var(--text-disabled)',
+                fontFamily: 'var(--font-sans)',
               }}
             >
-              <span>CAP-EDXL v1.2</span>
-              <span>AES-256</span>
-            </div>
+              v2.4
+            </span>
           </>
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            title="NODE-US-EAST-02 ONLINE"
-          >
-            <StatusDot variant="forest" size={8} />
+          <div title="System Operational">
+            <StatusDot variant="forest" pulse size={7} />
           </div>
         )}
       </div>

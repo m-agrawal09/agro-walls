@@ -333,47 +333,32 @@ export const MatchIntelligencePage: React.FC = () => {
           gap: 'var(--space-3)',
         }}>
           <div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              fontSize: '11px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              marginBottom: '2px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}>
-              <span>MATCH INTELLIGENCE WORKSPACE</span>
-              <span>/</span>
-              <span>CASE {missingPerson.caseId}</span>
-              <span>/</span>
-              <span>3 CANDIDATES INDEXED</span>
-            </div>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <h1 style={{
-                fontSize: 'var(--text-xl)',
-                fontWeight: 600,
+                fontSize: '26px',
+                fontWeight: 700,
                 color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
+                letterSpacing: '-0.025em',
               }}>
-                Identity Correlation Workspace
+                Match Intelligence
               </h1>
               <Badge variant="charcoal">
-                CASE {missingPerson.caseId}
+                {missingPerson.caseId}
               </Badge>
-              <Badge variant="crimson" dot>
-                HIGH PRIORITY INQUIRY
+              <Badge variant="crimson">
+                High Priority
               </Badge>
             </div>
+            <p style={{ fontSize: '14.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Algorithmic demographic, clothing, and physical marker comparison.
+            </p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
             <button
               onClick={() => navigate('/verification')}
               className="btn btn-secondary"
-              style={{ height: '32px' }}
+              style={{ height: '36px', fontSize: '13px' }}
             >
               <span>Verification Queue</span>
             </button>

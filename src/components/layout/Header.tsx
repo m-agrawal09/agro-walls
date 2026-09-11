@@ -3,10 +3,9 @@ import {
   Menu, 
   Search, 
   Plus, 
-  Radio, 
-  Clock 
+  Clock,
+  User
 } from 'lucide-react';
-import { Badge } from '../common/Badge';
 import { StatusDot } from '../common/StatusDot';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -22,14 +21,12 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const isOverview = location.pathname === '/' || location.pathname === '/overview';
-  const [timeUtc, setTimeUtc] = useState('');
-  const [timeLocal, setTimeLocal] = useState('');
+  const [timeDisplay, setTimeDisplay] = useState('');
 
   useEffect(() => {
     const updateTimes = () => {
       const now = new Date();
-      setTimeUtc(now.toUTCString().slice(17, 25) + ' UTC');
-      setTimeLocal(now.toTimeString().slice(0, 8) + ' LOC');
+      setTimeDisplay(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     };
     updateTimes();
     const interval = setInterval(updateTimes, 1000);
@@ -51,21 +48,21 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       style={{
         height: 'var(--header-height)',
-        backgroundColor: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-base)',
+        backgroundColor: 'rgba(255, 255, 255, 0.42)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.52)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 var(--space-4)',
+        padding: '0 20px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(20px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(150%)',
       }}
     >
       {/* Left Area: Toggle & Incident Scope */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
           onClick={onToggleSidebar}
           aria-label={sidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
@@ -83,33 +80,19 @@ export const Header: React.FC<HeaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 'var(--space-2)',
-          paddingLeft: 'var(--space-2)',
-          borderLeft: '1px solid var(--border-subtle)',
+          gap: '8px',
+          paddingLeft: '12px',
+          borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <StatusDot variant="forest" pulse size={8} />
-            <span style={{
-              fontSize: 'var(--text-xs)',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: '0.04em',
-            }}>
-              INCIDENT ALPHA-04
-            </span>
-          </div>
-
-          <Badge variant="amber">
-            LEVEL 2 OPS
-          </Badge>
-
+          <StatusDot variant="forest" pulse size={7} />
           <span style={{
-            fontSize: 'var(--text-xs)',
-            color: 'var(--text-muted)',
-            display: 'none',
+            fontSize: '14.5px',
+            fontWeight: 650,
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)',
+            letterSpacing: '-0.015em',
           }}>
-            COASTAL SURGE DISPATCH
+            Central India Response
           </span>
         </div>
       </div>
@@ -118,15 +101,15 @@ export const Header: React.FC<HeaderProps> = ({
       {!isOverview ? (
         <div style={{
           flex: 1,
-          maxWidth: '520px',
-          margin: '0 var(--space-4)',
+          maxWidth: '460px',
+          margin: '0 20px',
         }}>
           <form onSubmit={handleHeaderSearch} style={{ position: 'relative', width: '100%' }}>
             <Search
-              size={14}
+              size={15}
               style={{
                 position: 'absolute',
-                left: '10px',
+                left: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: 'var(--text-muted)',
@@ -137,86 +120,46 @@ export const Header: React.FC<HeaderProps> = ({
               type="text"
               value={headerSearch}
               onChange={(e) => setHeaderSearch(e.target.value)}
-              placeholder="Search Case ID (RC-2026-XXXX), Person Name, or Location..."
+              placeholder="Search cases, names, locations..."
               style={{
                 width: '100%',
-                height: '34px',
-                paddingLeft: '32px',
-                paddingRight: '60px',
-                fontSize: 'var(--text-sm)',
-                backgroundColor: 'var(--bg-app)',
-                borderColor: 'var(--border-subtle)',
+                height: '36px',
+                paddingLeft: '36px',
+                paddingRight: '16px',
+                fontSize: '14px',
+                fontFamily: 'var(--font-sans)',
+                backgroundColor: 'rgba(255, 255, 255, 0.55)',
+                borderColor: 'rgba(255, 255, 255, 0.65)',
+                borderRadius: '8px',
               }}
             />
-            <button
-              type="submit"
-              style={{
-                position: 'absolute',
-                right: '6px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 'var(--text-xs)',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-muted)',
-                backgroundColor: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-xs)',
-                cursor: 'pointer',
-              }}
-            >
-              Enter ↵
-            </button>
           </form>
         </div>
       ) : (
         <div style={{ flex: 1 }} />
       )}
 
-      {/* Right Area: Telemetry Clocks, CAD status, Action */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-        {/* Operational Clocks */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-3)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 'var(--text-xs)',
-          color: 'var(--text-secondary)',
-          backgroundColor: 'var(--bg-app)',
-          border: '1px solid var(--border-subtle)',
-          padding: '4px 10px',
-          borderRadius: 'var(--radius-sm)',
-        }}>
-          <Clock size={13} color="var(--text-muted)" />
-          <span style={{ fontWeight: 600 }}>{timeUtc || '00:00:00 UTC'}</span>
-          <span style={{ color: 'var(--border-strong)' }}>|</span>
-          <span>{timeLocal || '00:00:00 LOC'}</span>
-        </div>
-
-        {/* CAD Live Feed Indicator */}
+      {/* Right Area: Time, Family Portal, Actions, Profile */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Clock */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '13px',
+          color: 'var(--text-muted)',
           padding: '4px 8px',
-          borderRadius: 'var(--radius-sm)',
-          fontSize: 'var(--text-xs)',
-          fontFamily: 'var(--font-mono)',
-          color: 'var(--color-forest-text)',
-          backgroundColor: 'var(--color-forest-bg)',
-          border: '1px solid var(--color-forest-border)',
         }}>
-          <Radio size={12} color="var(--color-forest)" />
-          <span>CAD: LIVE</span>
+          <Clock size={14} color="var(--text-muted)" />
+          <span style={{ fontWeight: 550 }}>{timeDisplay}</span>
         </div>
 
         {/* Public Family Status Portal Link */}
         <button
           onClick={() => navigate('/status')}
           className="btn btn-secondary"
-          style={{ height: '34px', fontSize: '12px' }}
-          title="Open Public Family Status Portal"
+          style={{ height: '34px', fontSize: '13px', borderRadius: '7px' }}
         >
           <span>Family Portal</span>
         </button>
@@ -225,46 +168,29 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => navigate('/report/new')}
           className="btn btn-primary"
-          style={{ height: '34px' }}
+          style={{ height: '34px', borderRadius: '7px', fontSize: '13px' }}
         >
           <Plus size={15} />
-          <span>Rapid Intake</span>
+          <span>New Report</span>
         </button>
 
-        {/* Operator Badge */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-2)',
-          paddingLeft: 'var(--space-2)',
-          borderLeft: '1px solid var(--border-subtle)',
-        }}>
-          <div
-            style={{
-              width: '30px',
-              height: '30px',
-              backgroundColor: 'var(--color-charcoal-800)',
-              color: 'var(--text-inverse)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 'var(--radius-sm)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 600,
-            }}
-            title="Operator ID: DISP-884"
-          >
-            D8
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-            <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-primary)' }}>
-              DISP-884
-            </span>
-            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              TIER 2
-            </span>
-          </div>
+        {/* Profile Avatar */}
+        <div
+          style={{
+            width: '30px',
+            height: '30px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            border: '1px solid var(--border-base)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+          }}
+          title="Dispatcher Account"
+        >
+          <User size={15} />
         </div>
       </div>
     </header>

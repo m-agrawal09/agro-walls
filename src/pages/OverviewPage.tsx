@@ -181,12 +181,12 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100%' }}>
-      {/* Editorial Disaster Command Header */}
+      {/* Header */}
       <div
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-base)',
-          padding: 'var(--space-5) var(--space-8)',
+          padding: '20px 32px',
         }}
       >
         <div style={{
@@ -196,41 +196,26 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
           flexWrap: 'wrap',
           gap: 'var(--space-4)',
         }}>
-          {/* Title & Subtitle */}
+          {/* Title */}
           <div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-              fontSize: 'var(--text-xs)',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              marginBottom: 'var(--space-1)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}>
-              <span>DISASTER COMMAND CENTER</span>
-              <span>/</span>
-              <span>SITUATIONAL OPERATIONAL OVERVIEW</span>
-            </div>
             <h1 style={{
-              fontSize: 'var(--text-2xl)',
-              fontWeight: 600,
+              fontSize: '26px',
+              fontWeight: 700,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.025em',
               marginBottom: '4px',
             }}>
-              Missing Person Coordination
+              Overview
             </h1>
             <p style={{
-              fontSize: 'var(--text-sm)',
+              fontSize: '14.5px',
               color: 'var(--text-secondary)',
             }}>
-              Centralized intake, identity matching and human verification.
+              Intake, automated matching, and field verification status.
             </p>
           </div>
 
-          {/* Active Event Selector & SitRep Controls */}
+          {/* Active Event Selector & Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             {/* Active Disaster Switcher */}
             <div style={{ position: 'relative' }}>
@@ -241,23 +226,19 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
                   display: 'flex',
                   alignItems: 'center',
                   gap: 'var(--space-3)',
-                  padding: '6px 12px',
+                  padding: '7px 16px',
                   height: '38px',
                   backgroundColor: 'var(--bg-surface)',
                   cursor: 'pointer',
                   borderColor: 'var(--border-strong)',
+                  borderRadius: '7px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <StatusDot variant="crimson" pulse size={8} />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: 1.15 }}>
-                    <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                      ACTIVE EVENT
-                    </span>
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {selectedDisaster}
-                    </span>
-                  </div>
+                  <StatusDot variant="crimson" pulse size={7} />
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {selectedDisaster}
+                  </span>
                 </div>
                 <ChevronDown size={14} color="var(--text-secondary)" />
               </button>
@@ -275,8 +256,8 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
                     padding: 'var(--space-2) 0',
                   }}
                 >
-                  <div style={{ padding: '6px 12px', fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}>
-                    SELECT DECLARED DISASTER OPERATION
+                  <div style={{ padding: '6px 12px', fontSize: '12px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600 }}>
+                    Active Incidents
                   </div>
                   {disastersList.map((item, idx) => (
                     <div
@@ -302,12 +283,12 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
-                        <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-crimson)' }}>{item.cases} CASES</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--color-crimson)', fontWeight: 600 }}>{item.cases} cases</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                         <span>{item.region}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{item.status}</span>
+                        <span>{item.status}</span>
                       </div>
                     </div>
                   ))}
@@ -319,8 +300,8 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
               type="button"
               onClick={handleExportSitRep}
               className="btn btn-secondary" 
-              style={{ height: '38px' }} 
-              title="Download Operational Situation Report"
+              style={{ height: '38px', borderRadius: '7px', fontSize: '13.5px' }} 
+              title="Download Situation Report"
             >
               <Download size={14} />
               <span>Export SitRep</span>
@@ -329,16 +310,16 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
             <button
               onClick={() => navigate('/incident-map')}
               className="btn btn-secondary"
-              style={{ height: '38px', borderColor: 'rgba(225, 29, 72, 0.4)', color: '#e11d48', fontWeight: 600 }}
+              style={{ height: '38px', borderRadius: '7px', borderColor: 'rgba(225, 29, 72, 0.4)', color: '#e11d48', fontWeight: 600, fontSize: '13.5px' }}
             >
               <MapPin size={14} />
-              <span>India Incident Map</span>
+              <span>Incident Map</span>
             </button>
 
             <button 
               onClick={() => navigate('/report/new')}
               className="btn btn-primary" 
-              style={{ height: '38px' }}
+              style={{ height: '38px', borderRadius: '7px', fontSize: '13.5px' }}
             >
               <span>+ Intake Case</span>
             </button>
@@ -348,148 +329,139 @@ ${verificationQueue.slice(0, 5).map(v => `- [${v.priority}] Case ${v.caseId}: ${
 
       {/* Main Operational Dashboard Content */}
       <div style={{
-        padding: 'var(--space-6) var(--space-8)',
+        padding: '24px 32px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'var(--space-6)',
+        gap: '24px',
       }}>
-        {/* KEY OPERATIONAL METRICS (Top Row) */}
+        {/* KEY OPERATIONAL METRICS */}
         <div>
           <div style={{
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 600,
+            fontSize: '13.5px',
+            fontWeight: 650,
             color: 'var(--text-muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            marginBottom: 'var(--space-2)',
+            marginBottom: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--space-2)',
+            gap: '8px',
           }}>
-            <span>INCIDENT TELEMETRY SNAPSHOT</span>
-            <span>—</span>
-            <span style={{ color: 'var(--text-secondary)' }}>UPDATED: REAL-TIME (CAD FEED 12ms)</span>
+            <span>Key Metrics</span>
+            <span style={{ color: 'var(--border-strong)' }}>•</span>
+            <span style={{ color: 'var(--color-forest-text)', fontSize: '12px', fontWeight: 600 }}>Live</span>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 'var(--space-3)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+            gap: '12px',
           }}>
             {/* Metric 1: Active Missing Cases */}
-            <div className="surface-card" style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '3px solid var(--color-crimson)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  ACTIVE MISSING
+            <div className="surface-card" style={{ padding: '18px 20px', borderTop: '3px solid var(--color-crimson)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Active Missing
                 </span>
-                <Badge variant="crimson" dot>
-                  UNRESOLVED
+                <Badge variant="crimson">
+                  Open
                 </Badge>
               </div>
-              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+              <div style={{ fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 {kpiData.totalCases}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Total open missing person records
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Open case records
               </div>
             </div>
 
             {/* Metric 2: Found / Rescued */}
-            <div className="surface-card" style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '3px solid var(--color-forest)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  FOUND / RESCUED
+            <div className="surface-card" style={{ padding: '18px 20px', borderTop: '3px solid var(--color-forest)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Found / Verified
                 </span>
                 <Badge variant="forest">
-                  LIVE REUNIONS
+                  Reunited
                 </Badge>
               </div>
-              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-forest)', letterSpacing: '-0.03em' }}>
+              <div style={{ fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-forest)', letterSpacing: '-0.02em' }}>
                 {kpiData.verifiedCases}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Reunited or safely registered at shelters
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Safely confirmed & reunited
               </div>
             </div>
 
             {/* Metric 3: Potential Matches */}
-            <div className="surface-card" style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '3px solid var(--color-amber)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  POTENTIAL MATCHES
+            <div className="surface-card" style={{ padding: '18px 20px', borderTop: '3px solid var(--color-amber)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Potential Matches
                 </span>
                 <Badge variant="amber">
-                  HIGH CONFIDENCE
+                  Review
                 </Badge>
               </div>
-              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-amber)', letterSpacing: '-0.03em' }}>
+              <div style={{ fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-amber)', letterSpacing: '-0.02em' }}>
                 {kpiData.pendingVerificationQueue}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Algorithmic correlations pending check
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Correlation pending check
               </div>
             </div>
 
             {/* Metric 4: Awaiting Verification */}
-            <div className="surface-card" style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '3px solid var(--color-amber)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  AWAITING VERIFICATION
+            <div className="surface-card" style={{ padding: '18px 20px', borderTop: '3px solid var(--border-strong)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Awaiting Verification
                 </span>
                 <Badge variant="default">
-                  TRIAGE QUEUE
+                  Queue
                 </Badge>
               </div>
-              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+              <div style={{ fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 {kpiData.awaitingVerification}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Assigned to field operators & liaison officers
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Field check pending
               </div>
             </div>
 
             {/* Metric 5: High Priority */}
-            <div className="surface-card" style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '3px solid var(--color-crimson)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  HIGH PRIORITY
+            <div className="surface-card" style={{ padding: '18px 20px', borderTop: '3px solid var(--color-crimson)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  High Priority
                 </span>
-                <Badge variant="crimson" dot>
-                  URGENT SAR
+                <Badge variant="crimson">
+                  Urgent
                 </Badge>
               </div>
-              <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--color-crimson)', letterSpacing: '-0.03em' }}>
+              <div style={{ fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-crimson)', letterSpacing: '-0.02em' }}>
                 {kpiData.lookingForMatch}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Unaccompanied minors, critical medical need
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Urgent attention cases
               </div>
             </div>
           </div>
         </div>
 
         {/* 1. CASE RESOLUTION PIPELINE */}
-        <div className="surface-card" style={{ padding: 'var(--space-5) var(--space-6)' }}>
+        <div className="surface-card" style={{ padding: '20px 24px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 'var(--space-4)',
-            paddingBottom: 'var(--space-3)',
+            marginBottom: '16px',
+            paddingBottom: '12px',
             borderBottom: '1px solid var(--border-subtle)',
           }}>
             <div>
-              <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                WORKFLOW DISPATCH ENGINE
-              </div>
-              <h2 style={{ fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Case Resolution Pipeline
+              <h2 style={{ fontSize: '16.5px', fontWeight: 650, color: 'var(--text-primary)' }}>
+                Resolution Pipeline
               </h2>
             </div>
-            <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              THROUGHPUT: 142 CASES / HOUR
-            </span>
           </div>
 
           {/* Linear 5-Stage Diagram */}
