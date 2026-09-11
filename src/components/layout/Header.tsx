@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { StatusDot } from '../common/StatusDot';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -20,6 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOverview = location.pathname === '/' || location.pathname === '/overview';
   const [timeUtc, setTimeUtc] = useState('');
   const [timeLocal, setTimeLocal] = useState('');
 
@@ -110,60 +112,64 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Center Area: Global Search */}
-      <div style={{
-        flex: 1,
-        maxWidth: '520px',
-        margin: '0 var(--space-4)',
-      }}>
-        <form onSubmit={handleHeaderSearch} style={{ position: 'relative', width: '100%' }}>
-          <Search
-            size={14}
-            style={{
-              position: 'absolute',
-              left: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--text-muted)',
-              pointerEvents: 'none',
-            }}
-          />
-          <input
-            type="text"
-            value={headerSearch}
-            onChange={(e) => setHeaderSearch(e.target.value)}
-            placeholder="Search Case ID (RC-2026-XXXX), Person Name, or Location..."
-            style={{
-              width: '100%',
-              height: '34px',
-              paddingLeft: '32px',
-              paddingRight: '60px',
-              fontSize: 'var(--text-sm)',
-              backgroundColor: 'var(--bg-app)',
-              borderColor: 'var(--border-subtle)',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              position: 'absolute',
-              right: '6px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: 'var(--text-xs)',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              backgroundColor: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-xs)',
-              cursor: 'pointer',
-            }}
-          >
-            Enter ↵
-          </button>
-        </form>
-      </div>
+      {/* Center Area: Global Search (Hidden on Overview Page) */}
+      {!isOverview ? (
+        <div style={{
+          flex: 1,
+          maxWidth: '520px',
+          margin: '0 var(--space-4)',
+        }}>
+          <form onSubmit={handleHeaderSearch} style={{ position: 'relative', width: '100%' }}>
+            <Search
+              size={14}
+              style={{
+                position: 'absolute',
+                left: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              type="text"
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              placeholder="Search Case ID (RC-2026-XXXX), Person Name, or Location..."
+              style={{
+                width: '100%',
+                height: '34px',
+                paddingLeft: '32px',
+                paddingRight: '60px',
+                fontSize: 'var(--text-sm)',
+                backgroundColor: 'var(--bg-app)',
+                borderColor: 'var(--border-subtle)',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                position: 'absolute',
+                right: '6px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: 'var(--text-xs)',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-muted)',
+                backgroundColor: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-xs)',
+                cursor: 'pointer',
+              }}
+            >
+              Enter ↵
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div style={{ flex: 1 }} />
+      )}
 
       {/* Right Area: Telemetry Clocks, CAD status, Action */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
