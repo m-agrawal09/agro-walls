@@ -149,7 +149,7 @@ export const AddReportPage: React.FC = () => {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const randomCaseNum = Math.floor(10000 + Math.random() * 90000);
+      const randomCaseNum = String(Math.floor(1 + Math.random() * 99999)).padStart(5, '0');
       const caseId = `MP-2026-${randomCaseNum}`;
       setGeneratedCaseId(caseId);
       setIsSubmitting(false);

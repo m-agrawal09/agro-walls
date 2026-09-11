@@ -3,9 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { OverviewPage } from './pages/OverviewPage';
 import { AddReportPage } from './pages/AddReportPage';
+import { MatchIntelligencePage } from './pages/MatchIntelligencePage';
 import {
   LiveCasesPage,
-  MatchIntelligencePage,
   VerificationQueuePage,
   DuplicateResolutionPage,
   CommunityReportsPage,
