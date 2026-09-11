@@ -123,6 +123,15 @@ export const api = {
   },
 
   // Reports
+  async getReports(params?: { type?: string; status?: string }) {
+    const query = new URLSearchParams();
+    if (params?.type) query.append('type', params.type);
+    if (params?.status) query.append('status', params.status);
+    const res = await fetch(`${API_BASE}/reports?${query.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch reports');
+    return res.json();
+  },
+
   async submitReport(data: any) {
     const res = await fetch(`${API_BASE}/reports`, {
       method: 'POST',

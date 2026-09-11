@@ -583,6 +583,14 @@ export const AddReportPage: React.FC = () => {
                     <span>Print Intake Docket</span>
                   </button>
                   <button
+                    onClick={() => navigate('/incident-map')}
+                    className="btn btn-secondary"
+                    style={{ borderColor: 'rgba(225, 29, 72, 0.4)', color: '#e11d48', fontWeight: 600 }}
+                  >
+                    <MapPin size={14} />
+                    <span>View on India Incident Map</span>
+                  </button>
+                  <button
                     onClick={() => navigate('/cases')}
                     className="btn btn-primary"
                     style={{ backgroundColor: 'var(--color-charcoal-900)' }}

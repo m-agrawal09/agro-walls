@@ -286,6 +286,15 @@ export const OverviewPage: React.FC = () => {
               <span>Export SitRep</span>
             </button>
 
+            <button
+              onClick={() => navigate('/incident-map')}
+              className="btn btn-secondary"
+              style={{ height: '38px', borderColor: 'rgba(225, 29, 72, 0.4)', color: '#e11d48', fontWeight: 600 }}
+            >
+              <MapPin size={14} />
+              <span>India Incident Map</span>
+            </button>
+
             <button 
               onClick={() => navigate('/report/new')}
               className="btn btn-primary" 

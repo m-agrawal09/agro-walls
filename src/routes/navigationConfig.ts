@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sliders,
   Share2,
+  MapPin,
   LucideIcon
 } from 'lucide-react';
 
@@ -124,6 +125,15 @@ export const navigationConfig: NavSectionConfig[] = [
         badge: { text: 'PHYSICS', variant: 'forest' },
         shortcut: '9',
         description: 'Physics-enabled link analysis & multi-agency relationship graph',
+      },
+      {
+        id: 'geospatial-map',
+        label: 'India Incident Map',
+        path: '/incident-map',
+        icon: MapPin,
+        badge: { text: 'RAJASTHAN', variant: 'crimson' },
+        shortcut: 'M',
+        description: 'Geospatial disaster map of India with highlighted Rajasthan border',
       },
     ],
   },

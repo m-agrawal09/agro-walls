@@ -438,6 +438,25 @@ export const NlpReportChatbot: React.FC<NlpReportChatbotProps> = ({
             <ExternalLink size={16} />
           </button>
           <button
+            onClick={() => window.location.href = `/incident-map`}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(225, 29, 72, 0.4)',
+              background: 'rgba(225, 29, 72, 0.08)',
+              color: '#e11d48',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <MapPin size={16} />
+            <span>View on India Incident Map</span>
+          </button>
+          <button
             onClick={handleReset}
             style={{
               padding: '0.75rem 1.5rem',
